@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import io from "socket.io-client";
 import Editor from "@monaco-editor/react";
 import VideoChat from "./VideoChat";
+import axios from "axios";
 import "./App.css";
 
 const socket = io("http://localhost:5000");
@@ -22,6 +23,9 @@ const RoomPage = () => {
   const [copySuccess, setCopySuccess] = useState("");
 
   const navigate = useNavigate();
+  const recognitionRef = useRef(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcript, setTranscript] = useState("");
 
   const languageVersions = {
     java: "15.0.2",
@@ -38,26 +42,14 @@ const RoomPage = () => {
 
     socket.emit("join", { roomId, Username: name });
 
-    socket.on("userJoined", (users) => {
-      setUsers(users);
-    });
-
-    socket.on("codeUpdate", (newCode) => {
-      setCode(newCode);
-    });
-
+    socket.on("userJoined", (users) => setUsers(users));
+    socket.on("codeUpdate", (newCode) => setCode(newCode));
     socket.on("userTyping", (user) => {
       setTyping(`${user.slice(0, 12)} is typing...`);
       setTimeout(() => setTyping(""), 2000);
     });
-
-    socket.on("languageUpdate", (newLang) => {
-      setLanguage(newLang);
-    });
-
-    socket.on("codeResponse", (res) => {
-      setOutput(res.run.output);
-    });
+    socket.on("languageUpdate", (newLang) => setLanguage(newLang));
+    socket.on("codeResponse", (res) => setOutput(res.run.output));
 
     const handleBeforeUnload = () => {
       socket.emit("leaveRoom");
@@ -104,11 +96,61 @@ const RoomPage = () => {
     setTimeout(() => setCopySuccess(""), 2000);
   };
 
+  const startTranscription = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("SpeechRecognition not supported in this browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = async (event) => {
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        if (event.results[i].isFinal) {
+          const spokenText = event.results[i][0].transcript.trim();
+          const label = role === "interviewer" ? "Interviewer" : "Interviewee";
+          const line = `${label}: ${spokenText}`;
+
+          setTranscript((prev) => `${prev}\n${line}`);
+
+          try {
+            await axios.post("http://localhost:5000/api/append-transcript", {
+              roomId,
+              line
+            });
+          } catch (error) {
+            console.error("Failed to append transcript:", error);
+          }
+        }
+      }
+    };
+
+    recognition.start();
+    recognitionRef.current = recognition;
+    setIsRecording(true);
+  };
+
+  const stopTranscription = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
+    setIsRecording(false);
+  };
+
   return (
     <div className="editor-container">
       <div className="sidebar">
-        {/* Video Feed Section */}
         <VideoChat socket={socket} roomId={roomId} />
+
+        <div style={{ margin: "10px 0" }}>
+          <button onClick={isRecording ? stopTranscription : startTranscription}>
+            {isRecording ? "🔴 Stop Recording" : "🎙 Start Recording"}
+          </button>
+        </div>
 
         <div className="room-info">
           <h2>Room ID: {roomId}</h2>
@@ -162,6 +204,12 @@ const RoomPage = () => {
           value={output}
           placeholder="Output will be displayed here..."
         />
+        {transcript && (
+          <div className="transcript-box">
+            <h4>📝 Transcript:</h4>
+            <pre style={{ whiteSpace: "pre-wrap" }}>{transcript}</pre>
+          </div>
+        )}
       </div>
     </div>
   );

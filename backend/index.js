@@ -2,6 +2,13 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import axios from "axios";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
@@ -11,7 +18,45 @@ const io = new Server(server, {
   },
 });
 
-// Room store: Map<roomId, { users: Set, code: string, output: string }>
+app.use(express.json());
+
+// ✅ SAVE TRANSCRIPT API
+app.post("/api/save-transcript", (req, res) => {
+  const { roomId, transcript } = req.body;
+
+  if (!roomId || !transcript) {
+    return res.status(400).json({ error: "Missing roomId or transcript" });
+  }
+
+  const dir = path.join(__dirname, "transcripts");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+  const filePath = path.join(dir, `transcript_room_${roomId}.txt`);
+  fs.writeFileSync(filePath, transcript, "utf-8");
+
+  console.log(`📄 Transcript saved: ${filePath}`);
+  res.status(200).json({ message: "Transcript saved!", file: filePath });
+});
+
+// ✅ APPEND TRANSCRIPT LINE API
+app.post("/api/append-transcript", (req, res) => {
+  const { roomId, line } = req.body;
+
+  if (!roomId || !line) {
+    return res.status(400).json({ error: "Missing roomId or line" });
+  }
+
+  const dir = path.join(__dirname, "transcripts");
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+  const filePath = path.join(dir, `transcript_room_${roomId}.txt`);
+  fs.appendFileSync(filePath, line + "\n", "utf-8");
+
+  console.log(`📝 Line appended to: ${filePath}`);
+  res.status(200).json({ message: "Line appended!" });
+});
+
+// 🧠 ROOM SOCKET LOGIC
 const rooms = new Map();
 let lastCompileTime = 0;
 
@@ -19,7 +64,6 @@ io.on("connection", (socket) => {
   let currentRoom = null;
   let currentUser = null;
 
-  // 🔌 Join Room
   socket.on("join", ({ roomId, Username }) => {
     if (currentRoom) {
       socket.leave(currentRoom);
@@ -44,7 +88,6 @@ io.on("connection", (socket) => {
     socket.emit("codeUpdate", room.code);
   });
 
-  // 💻 Code Sync
   socket.on("codeChange", ({ roomId, code }) => {
     if (rooms.has(roomId)) {
       rooms.get(roomId).code = code;
@@ -52,7 +95,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 💨 Leave Room
   socket.on("leaveRoom", () => {
     if (currentRoom && currentUser && rooms.has(currentRoom)) {
       rooms.get(currentRoom).users.delete(currentUser);
@@ -63,26 +105,18 @@ io.on("connection", (socket) => {
     currentUser = null;
   });
 
-  // ⌨️ Typing Indicator
   socket.on("typing", ({ roomId, Username }) => {
     socket.to(roomId).emit("userTyping", Username);
   });
 
-  // 🌐 Language Switch
   socket.on("languageChange", ({ roomId, language }) => {
     io.to(roomId).emit("languageUpdate", language);
   });
 
-  // ⚙️ Code Compile (rate-limited)
   socket.on("compileCode", async ({ code, roomId, language, version }) => {
     const now = Date.now();
     const wait = 200 - (now - lastCompileTime);
-
-    if (wait > 0) {
-      console.log(`⏳ Delaying compile by ${wait}ms to avoid rate limit`);
-      await new Promise((res) => setTimeout(res, wait));
-    }
-
+    if (wait > 0) await new Promise((res) => setTimeout(res, wait));
     lastCompileTime = Date.now();
 
     try {
@@ -104,7 +138,6 @@ io.on("connection", (socket) => {
     }
   });
 
-  // 📹 WebRTC: Video Offer/Answer/ICE
   socket.on("video-offer", ({ roomId, sdp }) => {
     socket.to(roomId).emit("video-offer", { sdp });
   });
@@ -117,7 +150,6 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
 
-  // ❌ Handle Disconnect
   socket.on("disconnect", () => {
     if (currentRoom && currentUser && rooms.has(currentRoom)) {
       rooms.get(currentRoom).users.delete(currentUser);
@@ -127,7 +159,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// 🌍 Start server
 const port = process.env.PORT || 5000;
 server.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
