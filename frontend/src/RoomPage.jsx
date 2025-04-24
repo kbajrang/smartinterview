@@ -6,7 +6,7 @@ import VideoChat from "./VideoChat";
 import axios from "axios";
 import "./App.css";
 
-const socket = io("http://localhost:5000");
+const socket = io("http://192.168.155.213:5000");
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -21,11 +21,11 @@ const RoomPage = () => {
   const [typing, setTyping] = useState("");
   const [output, setOutput] = useState("");
   const [copySuccess, setCopySuccess] = useState("");
-
-  const navigate = useNavigate();
-  const recognitionRef = useRef(null);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
+
+  const recognitionRef = useRef(null);
+  const navigate = useNavigate();
 
   const languageVersions = {
     java: "15.0.2",
@@ -51,10 +51,7 @@ const RoomPage = () => {
     socket.on("languageUpdate", (newLang) => setLanguage(newLang));
     socket.on("codeResponse", (res) => setOutput(res.run.output));
 
-    const handleBeforeUnload = () => {
-      socket.emit("leaveRoom");
-    };
-
+    const handleBeforeUnload = () => socket.emit("leaveRoom");
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
@@ -67,11 +64,6 @@ const RoomPage = () => {
       socket.off("codeResponse");
     };
   }, [roomId, name]);
-
-  const handleLeave = () => {
-    socket.emit("leaveRoom");
-    navigate("/");
-  };
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
@@ -88,6 +80,11 @@ const RoomPage = () => {
 
   const handleRunCode = () => {
     socket.emit("compileCode", { roomId, code, language, version });
+  };
+
+  const handleLeave = () => {
+    socket.emit("leaveRoom");
+    navigate("/");
   };
 
   const copyRoomId = () => {
@@ -114,16 +111,14 @@ const RoomPage = () => {
           const spokenText = event.results[i][0].transcript.trim();
           const label = role === "interviewer" ? "Interviewer" : "Interviewee";
           const line = `${label}: ${spokenText}`;
-
           setTranscript((prev) => `${prev}\n${line}`);
-
           try {
-            await axios.post("http://localhost:5000/api/append-transcript", {
+            await axios.post("http://192.168.155.213:5000/api/append-transcript", {
               roomId,
-              line
+              line,
             });
           } catch (error) {
-            console.error("Failed to append transcript:", error);
+            console.error("Transcript append failed:", error);
           }
         }
       }
@@ -146,65 +141,52 @@ const RoomPage = () => {
       <div className="sidebar">
         <VideoChat socket={socket} roomId={roomId} />
 
-        <div style={{ margin: "10px 0" }}>
-          <button onClick={isRecording ? stopTranscription : startTranscription}>
-            {isRecording ? "🔴 Stop Recording" : "🎙 Start Recording"}
-          </button>
-        </div>
+        {role === "interviewer" && (
+          <div style={{ margin: "15px 0" }}>
+            <button
+              className="record-btn"
+              onClick={isRecording ? stopTranscription : startTranscription}
+              title="Toggle Transcript Recording"
+            >
+              {isRecording ? "🔴 Stop Recording" : "🎤 Start Recording"}
+            </button>
+          </div>
+        )}
 
         <div className="room-info">
-          <h2>Room ID: {roomId}</h2>
-          <button className="copy-button" onClick={copyRoomId}>
-            Copy Room ID
-          </button>
+          <h2>Room ID</h2>
+          <code>{roomId}</code>
+          <button className="copy-button" onClick={copyRoomId}>Copy</button>
           {copySuccess && <p className="copy-success">{copySuccess}</p>}
         </div>
 
-        <h3>Users in Room:</h3>
-        <ul>
-          {users.map((user, idx) => (
-            <li key={idx}>{user.slice(0, 12)}</li>
-          ))}
-        </ul>
+        <h3>Users in Room</h3>
+        <ul>{users.map((user, idx) => <li key={idx}>{user.slice(0, 12)}</li>)}</ul>
 
         <p className="typing-indicator">{typing}</p>
 
-        <select
-          className="language-selector"
-          value={language}
-          onChange={handleLanguageChange}
-        >
+        <select className="language-selector" value={language} onChange={handleLanguageChange}>
           <option value="java">Java</option>
           <option value="cpp">C++</option>
           <option value="javascript">JavaScript</option>
           <option value="python">Python</option>
         </select>
 
-        <button className="leave-button" onClick={handleLeave}>
-          Leave Room
-        </button>
+        <button className="leave-button" onClick={handleLeave}>Leave Room</button>
       </div>
 
       <div className="editor-wrapper">
         <Editor
           height="60%"
           language={language}
-          defaultLanguage={language}
           value={code}
           onChange={handleCodeChange}
           theme="vs-dark"
           options={{ minimap: { enabled: false }, fontSize: 16 }}
         />
-        <button className="run-btn" onClick={handleRunCode}>
-          Execute
-        </button>
-        <textarea
-          className="output-console"
-          readOnly
-          value={output}
-          placeholder="Output will be displayed here..."
-        />
-        {transcript && (
+        <button className="run-btn" onClick={handleRunCode}>Execute</button>
+        <textarea className="output-console" readOnly value={output} placeholder="Output..." />
+        {role === "interviewer" && transcript && (
           <div className="transcript-box">
             <h4>📝 Transcript:</h4>
             <pre style={{ whiteSpace: "pre-wrap" }}>{transcript}</pre>
