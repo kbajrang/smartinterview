@@ -6,7 +6,9 @@ import VideoChat from "./VideoChat";
 import axios from "axios";
 import "./App.css";
 
-const socket = io("http://localhost:5000");
+const socket = io("https://smartinterview-3.onrender.com", {
+  transports: ["websocket"],
+});
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -113,9 +115,9 @@ const RoomPage = () => {
           const line = `${label}: ${spokenText}`;
           setTranscript((prev) => `${prev}\n${line}`);
           try {
-            await axios.post("http://localhost:5000/api/append-transcript", {
-              roomId,git
-              line,
+            await axios.post("https://smartinterview-3.onrender.com/api/append-transcript", {
+              roomId,
+              line
             });
           } catch (error) {
             console.error("Transcript append failed:", error);
@@ -148,7 +150,7 @@ const RoomPage = () => {
               onClick={isRecording ? stopTranscription : startTranscription}
               title="Toggle Transcript Recording"
             >
-              {isRecording ? "🔴 Stop Recording" : "🎤 Start Recording"}
+              {isRecording ? "\u23F9 Stop" : "\uD83C\uDF99 Start"}
             </button>
           </div>
         )}
@@ -188,7 +190,7 @@ const RoomPage = () => {
         <textarea className="output-console" readOnly value={output} placeholder="Output..." />
         {role === "interviewer" && transcript && (
           <div className="transcript-box">
-            <h4>📝 Transcript:</h4>
+            <h4>\uD83D\uDCDD Transcript:</h4>
             <pre style={{ whiteSpace: "pre-wrap" }}>{transcript}</pre>
           </div>
         )}
