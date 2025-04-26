@@ -6,7 +6,7 @@ import VideoChat from "./VideoChat";
 import axios from "axios";
 import "./App.css";
 
-const socket = io("https://smartinterview-3.onrender.com", {
+const socket = io("https://smartinterview-4.onrender.com", {
   transports: ["websocket"],
 });
 
@@ -115,7 +115,7 @@ const RoomPage = () => {
           const line = `${label}: ${spokenText}`;
           setTranscript((prev) => `${prev}\n${line}`);
           try {
-            await axios.post("https://smartinterview-3.onrender.com/api/append-transcript", {
+            await axios.post("https://smartinterview-4.onrender.com/api/append-transcript", {
               roomId,
               line,
             });
