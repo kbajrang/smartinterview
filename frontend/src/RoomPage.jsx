@@ -117,7 +117,7 @@ const RoomPage = () => {
           try {
             await axios.post("https://smartinterview-3.onrender.com/api/append-transcript", {
               roomId,
-              line
+              line,
             });
           } catch (error) {
             console.error("Transcript append failed:", error);
