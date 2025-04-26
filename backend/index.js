@@ -161,5 +161,5 @@ io.on("connection", (socket) => {
 
 const port = process.env.PORT || 5000;
 server.listen(port, () => {
-  console.log(`🚀 Server running on http://192.168.155.213:${port}`);
+  console.log(`🚀 Server running on http://localhost:${port}`);
 });

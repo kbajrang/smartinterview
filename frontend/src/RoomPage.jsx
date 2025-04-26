@@ -6,7 +6,7 @@ import VideoChat from "./VideoChat";
 import axios from "axios";
 import "./App.css";
 
-const socket = io("http://192.168.155.213:5000");
+const socket = io("http://localhost:5000");
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -113,8 +113,8 @@ const RoomPage = () => {
           const line = `${label}: ${spokenText}`;
           setTranscript((prev) => `${prev}\n${line}`);
           try {
-            await axios.post("http://192.168.155.213:5000/api/append-transcript", {
-              roomId,
+            await axios.post("http://localhost:5000/api/append-transcript", {
+              roomId,git
               line,
             });
           } catch (error) {
