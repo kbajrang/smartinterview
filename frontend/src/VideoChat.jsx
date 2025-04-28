@@ -1,44 +1,54 @@
-import React, { useEffect, useRef } from "react";
+// src/VideoChat.jsx
+import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 
 const ICE_SERVERS = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
 const VideoChat = ({ socket, roomId }) => {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnection = useRef(null);
+  const localStreamRef = useRef(null);
+  const [mediaError, setMediaError] = useState(false);
 
   useEffect(() => {
     const startLocalVideo = async () => {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+
+        peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
+
+        stream.getTracks().forEach((track) => {
+          peerConnection.current.addTrack(track, stream);
+        });
+
+        peerConnection.current.ontrack = (event) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0];
+          }
+        };
+
+        peerConnection.current.onicecandidate = (event) => {
+          if (event.candidate) {
+            socket.emit("ice-candidate", { roomId, candidate: event.candidate });
+          }
+        };
+      } catch (error) {
+        console.error("Error accessing media devices.", error);
+        setMediaError(true);
       }
-
-      peerConnection.current = new RTCPeerConnection(ICE_SERVERS);
-
-      stream.getTracks().forEach(track => {
-        peerConnection.current.addTrack(track, stream);
-      });
-
-      peerConnection.current.ontrack = (event) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      };
-
-      peerConnection.current.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("ice-candidate", { roomId, candidate: event.candidate });
-        }
-      };
     };
 
     startLocalVideo();
 
     socket.on("start-call", async () => {
+      if (!peerConnection.current) return;
       const offer = await peerConnection.current.createOffer();
       await peerConnection.current.setLocalDescription(offer);
       socket.emit("video-offer", { roomId, sdp: offer });
@@ -71,14 +81,38 @@ const VideoChat = ({ socket, roomId }) => {
       socket.off("video-offer");
       socket.off("video-answer");
       socket.off("ice-candidate");
-      peerConnection.current?.close();
+
+      if (peerConnection.current) {
+        peerConnection.current.close();
+      }
+
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track) => track.stop());
+      }
     };
   }, [socket, roomId]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-      <video ref={localVideoRef} autoPlay muted playsInline style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }} />
-      <video ref={remoteVideoRef} autoPlay playsInline style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }} />
+      {mediaError ? (
+        <p style={{ color: "red" }}>Camera/Mic access denied. Video call unavailable.</p>
+      ) : (
+        <>
+          <video
+            ref={localVideoRef}
+            autoPlay
+            muted
+            playsInline
+            style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }}
+          />
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }}
+          />
+        </>
+      )}
     </div>
   );
 };

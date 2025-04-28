@@ -1,12 +1,11 @@
+// src/RoomPage.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import io from "socket.io-client";
 import Editor from "@monaco-editor/react";
 import VideoChat from "./VideoChat";
+import socket from "./socket"; // NEW: centralized socket instance
 import axios from "axios";
 import "./App.css";
-
-const socket = io("https://smartinterview-4.onrender.com", { transports: ["websocket"] });
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -15,10 +14,9 @@ const RoomPage = () => {
   const name = searchParams.get("name") || "Anonymous";
 
   const [language, setLanguage] = useState("java");
-  const [version, setVersion] = useState("");
+  const [version, setVersion] = useState("15.0.2");
   const [code, setCode] = useState("// write your code here");
   const [question, setQuestion] = useState("Read the question carefully...");
-  const [isQuestionExpanded, setIsQuestionExpanded] = useState(false);
   const [users, setUsers] = useState([]);
   const [typing, setTyping] = useState("");
   const [output, setOutput] = useState("");
@@ -44,6 +42,11 @@ const RoomPage = () => {
 
     socket.emit("join", { roomId, Username: name });
 
+    socket.on("roomFull", () => {
+      alert("Room is full. Redirecting...");
+      navigate("/");
+    });
+
     socket.on("userJoined", (users) => setUsers(users));
     socket.on("codeUpdate", (newCode) => setCode(newCode));
     socket.on("userTyping", (user) => {
@@ -66,8 +69,9 @@ const RoomPage = () => {
       socket.off("languageUpdate");
       socket.off("codeResponse");
       socket.off("questionUpdate");
+      socket.off("roomFull");
     };
-  }, [roomId, name]);
+  }, [roomId, name, navigate]);
 
   const handleCodeChange = (newCode) => {
     setCode(newCode);
@@ -100,7 +104,7 @@ const RoomPage = () => {
   const startTranscription = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("SpeechRecognition not supported in this browser.");
+      alert("SpeechRecognition not supported. Please update browser.");
       return;
     }
 
@@ -117,10 +121,7 @@ const RoomPage = () => {
           const line = `${label}: ${spokenText}`;
           setTranscript((prev) => `${prev}\n${line}`);
           try {
-            await axios.post("https://smartinterview-4.onrender.com/api/append-transcript", {
-              roomId,
-              line,
-            });
+            await axios.post(`/api/append-transcript`, { roomId, line });
           } catch (error) {
             console.error("Transcript append failed:", error);
           }
@@ -150,11 +151,9 @@ const RoomPage = () => {
         <VideoChat socket={socket} roomId={roomId} />
 
         {role === "interviewer" && (
-          <div style={{ margin: "15px 0" }}>
-            <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
-              {isRecording ? "⏹ Stop" : "🎙 Start"}
-            </button>
-          </div>
+          <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
+            {isRecording ? "⏹ Stop" : "🎙 Start"}
+          </button>
         )}
 
         <div className="room-info">
@@ -180,31 +179,19 @@ const RoomPage = () => {
       </div>
 
       <div className="editor-wrapper">
-        <div style={{ marginBottom: "10px", backgroundColor: "#1e1e1e", padding: "10px", borderRadius: "8px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h3 style={{ margin: 0 }}>🔥 Coding Question</h3>
+        <div className="question-box">
+          <div className="question-header">
+            <h3> Coding Question</h3>
             {role === "interviewer" && (
-              <button onClick={handlePostQuestion} style={{ padding: "6px 10px" }}>
-                📤 Post Question
-              </button>
+              <button onClick={handlePostQuestion}>📤 Post</button>
             )}
           </div>
 
           <textarea
-            style={{
-              marginTop: "8px",
-              width: "100%",
-              height: isQuestionExpanded ? "300px" : "100px",
-              resize: "none",
-              fontSize: "14px",
-              padding: "8px",
-              backgroundColor: "#2d2d2d",
-              color: "white",
-              borderRadius: "8px",
-            }}
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             readOnly={role !== "interviewer"}
+            className="question-content"
           />
         </div>
 

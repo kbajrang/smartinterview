@@ -6,12 +6,20 @@ import "./App.css";
 const IntervieweePage = () => {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
+  const [joining, setJoining] = useState(false);
   const navigate = useNavigate();
 
   const handleJoin = () => {
-    if (roomId && username) {
-      navigate(`/room/${roomId}?role=interviewee&name=${encodeURIComponent(username)}`);
+    const trimmedRoomId = roomId.trim();
+    const trimmedUsername = username.trim();
+
+    if (!trimmedRoomId || !trimmedUsername) {
+      alert("Please enter both Room ID and Name!");
+      return;
     }
+
+    setJoining(true);
+    navigate(`/room/${trimmedRoomId}?role=interviewee&name=${encodeURIComponent(trimmedUsername)}`);
   };
 
   return (
@@ -30,7 +38,9 @@ const IntervieweePage = () => {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
-        <button onClick={handleJoin}>Join Room</button>
+        <button onClick={handleJoin} disabled={joining}>
+          {joining ? "Joining..." : "Join Room"}
+        </button>
       </div>
     </div>
   );

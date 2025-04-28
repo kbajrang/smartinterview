@@ -1,4 +1,4 @@
-/* src/App.css */
+/* src/App.css - Premium Cleaned Version */
 
 :root {
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
@@ -11,8 +11,10 @@ body {
   padding: 0;
   overflow: hidden;
   height: 100vh;
+  width: 100vw;
 }
 
+/* Join Page Form */
 .join-container {
   display: flex;
   justify-content: center;
@@ -26,8 +28,8 @@ body {
   background-color: #fff;
   color: #333;
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   text-align: center;
   width: 340px;
 }
@@ -37,7 +39,7 @@ body {
   padding: 0.75rem;
   margin-bottom: 1rem;
   border: 1px solid #ccc;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
 }
 
@@ -47,7 +49,7 @@ body {
   background-color: #4a90e2;
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -57,14 +59,17 @@ body {
   background-color: #357abd;
 }
 
+/* Interview Room Layout */
 .editor-container {
   display: flex;
   height: 100vh;
   width: 100vw;
+  background-color: #121212;
 }
 
+/* Sidebar */
 .sidebar {
-  width: 280px;
+  width: 300px;
   padding: 1rem;
   background-color: #1e2a38;
   display: flex;
@@ -72,19 +77,43 @@ body {
   align-items: center;
   gap: 1rem;
   overflow-y: auto;
+  border-right: 1px solid #2c3e50;
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar video {
+  width: 260px;
+  height: 180px;
+  border-radius: 12px;
+  background-color: #000;
+  object-fit: cover;
+  box-shadow: 0px 0px 10px #000;
+}
+
+/* Room Info Block */
+.room-info {
+  background: #22303c;
+  padding: 1rem;
+  border-radius: 12px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .room-info h2 {
-  font-size: 1rem;
-  text-align: center;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #ecf0f1;
 }
 
 .copy-button {
-  padding: 0.5rem 1rem;
+  margin-top: 8px;
+  padding: 0.6rem 1rem;
   background-color: #3498db;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
+  font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -93,10 +122,25 @@ body {
   background-color: #2980b9;
 }
 
+/* Language Selector */
+.language-selector {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 8px;
+  background-color: #34495e;
+  color: white;
+  border: none;
+}
+
+/* Leave Button */
 .leave-button {
   background-color: #e74c3c;
   width: 100%;
   margin-top: auto;
+  padding: 0.7rem;
+  font-weight: bold;
+  border: none;
+  border-radius: 10px;
   transition: background-color 0.3s ease;
 }
 
@@ -104,31 +148,68 @@ body {
   background-color: #c0392b;
 }
 
-.language-selector {
-  width: 100%;
-  padding: 0.6rem;
-  border-radius: 6px;
-  background-color: #34495e;
-  color: white;
-  border: none;
+/* Typing Indicator */
+.typing-indicator {
+  font-size: 12px;
+  color: #bdc3c7;
 }
 
+/* Editor + Question Section */
 .editor-wrapper {
   flex-grow: 1;
   padding: 1rem;
-  background-color: #121212;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  background-color: #121212;
 }
 
+/* Coding Question Box */
+.question-box {
+  background-color: #22303c;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  color: white;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.question-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.question-content {
+  margin-top: 10px;
+  width: 100%;
+  height: 100px;
+  resize: none;
+  font-size: 14px;
+  padding: 10px;
+  background-color: #34495e;
+  color: white;
+  border-radius: 8px;
+  border: none;
+}
+
+/* Monaco Editor */
+.monaco-editor {
+  flex-grow: 1;
+}
+
+/* Execute Button */
 .run-btn {
   margin-top: 10px;
-  width: 150px;
+  align-self: flex-start;
   background-color: #2ecc71;
   border: none;
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   font-weight: bold;
   cursor: pointer;
   transition: background-color 0.3s ease;
@@ -138,47 +219,28 @@ body {
   background-color: #27ae60;
 }
 
+/* Output Console */
 .output-console {
-  margin-top: 10px;
-  padding: 10px;
-  font-size: 16px;
-  height: 180px;
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 15px;
+  height: 150px;
   width: 100%;
-  background-color: #2c3e50;
+  background-color: #1f2937;
   color: #fff;
-  border-radius: 8px;
-  border: none;
+  border-radius: 10px;
+  border-top: 2px solid #2ecc71;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
 
-.typing-indicator {
-  font-size: 12px;
-  color: #bdc3c7;
-}
-
-/* 📚 Question Box Styles */
-.question-box {
-  background-color: #34495e;
+/* Transcript Box */
+.transcript-box {
+  background-color: #1e2a38;
+  padding: 10px;
+  border-radius: 10px;
+  margin-top: 12px;
   color: white;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  width: 100%;
-  max-height: 150px;
-  overflow-y: auto;
-}
-
-.question-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 1rem;
-}
-
-.question-content {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  white-space: pre-wrap;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
 }
 
 /* Responsive Design */
@@ -186,16 +248,21 @@ body {
   .editor-container {
     flex-direction: column;
   }
-  
+
   .sidebar {
     width: 100%;
-    height: auto;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
   }
-  
+
   .editor-wrapper {
-    height: auto;
+    width: 100%;
+    padding: 0.5rem;
+  }
+
+  .sidebar video {
+    width: 150px;
+    height: 120px;
   }
 }
