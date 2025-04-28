@@ -6,9 +6,7 @@ import VideoChat from "./VideoChat";
 import axios from "axios";
 import "./App.css";
 
-const socket = io("https://smartinterview-4.onrender.com", {
-  transports: ["websocket"],
-});
+const socket = io("https://smartinterview-4.onrender.com", { transports: ["websocket"] });
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -19,6 +17,8 @@ const RoomPage = () => {
   const [language, setLanguage] = useState("java");
   const [version, setVersion] = useState("");
   const [code, setCode] = useState("// write your code here");
+  const [question, setQuestion] = useState("Read the question carefully...");
+  const [isQuestionExpanded, setIsQuestionExpanded] = useState(false);
   const [users, setUsers] = useState([]);
   const [typing, setTyping] = useState("");
   const [output, setOutput] = useState("");
@@ -52,6 +52,7 @@ const RoomPage = () => {
     });
     socket.on("languageUpdate", (newLang) => setLanguage(newLang));
     socket.on("codeResponse", (res) => setOutput(res.run.output));
+    socket.on("questionUpdate", (newQuestion) => setQuestion(newQuestion));
 
     const handleBeforeUnload = () => socket.emit("leaveRoom");
     window.addEventListener("beforeunload", handleBeforeUnload);
@@ -64,6 +65,7 @@ const RoomPage = () => {
       socket.off("userTyping");
       socket.off("languageUpdate");
       socket.off("codeResponse");
+      socket.off("questionUpdate");
     };
   }, [roomId, name]);
 
@@ -132,10 +134,14 @@ const RoomPage = () => {
   };
 
   const stopTranscription = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-    }
+    if (recognitionRef.current) recognitionRef.current.stop();
     setIsRecording(false);
+  };
+
+  const handlePostQuestion = () => {
+    if (role === "interviewer") {
+      socket.emit("postQuestion", { roomId, question });
+    }
   };
 
   return (
@@ -145,12 +151,8 @@ const RoomPage = () => {
 
         {role === "interviewer" && (
           <div style={{ margin: "15px 0" }}>
-            <button
-              className="record-btn"
-              onClick={isRecording ? stopTranscription : startTranscription}
-              title="Toggle Transcript Recording"
-            >
-              {isRecording ? "\u23F9 Stop" : "\uD83C\uDF99 Start"}
+            <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
+              {isRecording ? "⏹ Stop" : "🎙 Start"}
             </button>
           </div>
         )}
@@ -158,7 +160,7 @@ const RoomPage = () => {
         <div className="room-info">
           <h2>Room ID</h2>
           <code>{roomId}</code>
-          <button className="copy-button" onClick={copyRoomId}>Copy</button>
+          <button className="copy-button" onClick={copyRoomId}>Copy Room ID</button>
           {copySuccess && <p className="copy-success">{copySuccess}</p>}
         </div>
 
@@ -178,6 +180,34 @@ const RoomPage = () => {
       </div>
 
       <div className="editor-wrapper">
+        <div style={{ marginBottom: "10px", backgroundColor: "#1e1e1e", padding: "10px", borderRadius: "8px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3 style={{ margin: 0 }}>🔥 Coding Question</h3>
+            {role === "interviewer" && (
+              <button onClick={handlePostQuestion} style={{ padding: "6px 10px" }}>
+                📤 Post Question
+              </button>
+            )}
+          </div>
+
+          <textarea
+            style={{
+              marginTop: "8px",
+              width: "100%",
+              height: isQuestionExpanded ? "300px" : "100px",
+              resize: "none",
+              fontSize: "14px",
+              padding: "8px",
+              backgroundColor: "#2d2d2d",
+              color: "white",
+              borderRadius: "8px",
+            }}
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            readOnly={role !== "interviewer"}
+          />
+        </div>
+
         <Editor
           height="60%"
           language={language}
@@ -186,11 +216,14 @@ const RoomPage = () => {
           theme="vs-dark"
           options={{ minimap: { enabled: false }, fontSize: 16 }}
         />
+
         <button className="run-btn" onClick={handleRunCode}>Execute</button>
+
         <textarea className="output-console" readOnly value={output} placeholder="Output..." />
+
         {role === "interviewer" && transcript && (
           <div className="transcript-box">
-            <h4>\uD83D\uDCDD Transcript:</h4>
+            <h4>📝 Transcript:</h4>
             <pre style={{ whiteSpace: "pre-wrap" }}>{transcript}</pre>
           </div>
         )}
