@@ -110,13 +110,14 @@ const RoomPage = () => {
 
     const recognition = new SpeechRecognition();
     recognition.continuous = true;
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.lang = "en-US";
 
     recognition.onresult = async (event) => {
+      let interimTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
+        const spokenText = event.results[i][0].transcript.trim();
         if (event.results[i].isFinal) {
-          const spokenText = event.results[i][0].transcript.trim();
           const label = role === "interviewer" ? "Interviewer" : "Interviewee";
           const line = `${label}: ${spokenText}`;
           setTranscript((prev) => `${prev}\n${line}`);
@@ -125,6 +126,8 @@ const RoomPage = () => {
           } catch (error) {
             console.error("Transcript append failed:", error);
           }
+        } else {
+          interimTranscript += spokenText;
         }
       }
     };
@@ -139,9 +142,40 @@ const RoomPage = () => {
     setIsRecording(false);
   };
 
+  const handleDownloadTranscript = () => {
+    const element = document.createElement("a");
+    const file = new Blob([transcript], { type: "text/plain" });
+    element.href = URL.createObjectURL(file);
+    element.download = `Transcript_Room_${roomId}.txt`;
+    document.body.appendChild(element);
+    element.click();
+  };
+
   const handlePostQuestion = () => {
     if (role === "interviewer") {
       socket.emit("postQuestion", { roomId, question });
+    }
+  };
+
+  const handleViewResume = async () => {
+    try {
+      const interviewee = users.find((u) => u !== name);
+      if (!interviewee) {
+        alert("Interviewee not found in room.");
+        return;
+      }
+
+      const response = await axios.get(`/api/get-resume?name=${encodeURIComponent(interviewee)}`);
+      const { resumeUrl } = response.data;
+
+      if (resumeUrl) {
+        window.open(resumeUrl, "_blank");
+      } else {
+        alert("No resume uploaded for this interviewee.");
+      }
+    } catch (error) {
+      console.error("Error fetching resume:", error);
+      alert("Failed to load resume.");
     }
   };
 
@@ -151,9 +185,19 @@ const RoomPage = () => {
         <VideoChat socket={socket} roomId={roomId} />
 
         {role === "interviewer" && (
-          <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
-            {isRecording ? "⏹ Stop" : "🎙 Start"}
-          </button>
+          <>
+            <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
+              {isRecording ? "⏹ Stop" : "🎙 Start"}
+            </button>
+            {transcript && (
+              <button className="copy-button" onClick={handleDownloadTranscript}>
+                📥 Download Transcript
+              </button>
+            )}
+            <button className="copy-button" onClick={handleViewResume} style={{ marginTop: "10px" }}>
+              📄 View Resume
+            </button>
+          </>
         )}
 
         <div className="room-info">

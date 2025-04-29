@@ -10,6 +10,34 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import dotenv from "dotenv";
+import fetch from "node-fetch"; // ⬅️ Important: Add at the top of index.js if not present
+import mongoose from "mongoose";
+import User from "./models/User.js";
+import multer from "multer"; // (Will use later for Resume upload)
+
+const MONGO_URI = "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // <--- paste your MongoDB Atlas URL
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ Connected to MongoDB"))
+.catch((error) => console.error("❌ MongoDB connection error:", error));
+
+// Setup storage for resumes
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/resumes"); // Save in uploads/resumes folder
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
+
+
+
 
 dotenv.config();
 
@@ -62,6 +90,42 @@ app.post("/api/append-transcript", (req, res) => {
     res.status(500).json({ error: "Failed to append transcript" });
   }
 });
+app.post("/api/register", async (req, res) => {
+  try {
+    const { name, phone, email, role, age } = req.body;
+
+    if (!name || !phone || !email || !role) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    const newUser = new User({ name, phone, email, role, age });
+    await newUser.save();
+
+    res.status(201).json({ message: "User registered", userId: newUser._id });
+  } catch (err) {
+    console.error("Register error:", err);
+    res.status(500).json({ error: "Registration failed" });
+  }
+});
+app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const filePath = req.file.path; // Saved resume file path
+
+    if (!userId || !filePath) {
+      return res.status(400).json({ error: "Missing userId or file" });
+    }
+
+    await User.findByIdAndUpdate(userId, { resumePath: filePath });
+
+    res.status(200).json({ message: "Resume uploaded successfully!" });
+  } catch (error) {
+    console.error("Resume upload error:", error);
+    res.status(500).json({ error: "Failed to upload resume" });
+  }
+});
+
+
 
 // WebSocket logic
 const rooms = new Map();
