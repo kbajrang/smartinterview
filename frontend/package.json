@@ -13,6 +13,7 @@
     "@monaco-editor/react": "^4.7.0",
     "axios": "^1.8.4",
     "frontend": "file:",
+    "jspdf": "^3.0.1",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

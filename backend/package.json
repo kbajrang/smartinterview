@@ -14,7 +14,11 @@
   "dependencies": {
     "axios": "^1.8.4",
     "backend": "file:",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
+    "mongoose": "^8.14.0",
+    "multer": "^1.4.5-lts.2",
+    "node-fetch": "^3.3.2",
     "socket.io": "^4.8.1"
   }
 }

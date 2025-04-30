@@ -49,7 +49,15 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "OPTIONS"],
+  credentials: true,
+}));
+
+app.use(express.json()); // ✅ REQUIRED for parsing req.body
+
+app.use("/resumes", express.static(path.join(__dirname, "uploads/resumes")));
 
 // Folders
 const transcriptDir = path.join(__dirname, "transcripts");
@@ -110,20 +118,48 @@ app.post("/api/register", async (req, res) => {
 app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
   try {
     const { userId } = req.body;
-    const filePath = req.file.path; // Saved resume file path
+    const filePath = req.file.path; // Full path like uploads/resumes/171442xxxx.pdf
 
     if (!userId || !filePath) {
       return res.status(400).json({ error: "Missing userId or file" });
     }
 
-    await User.findByIdAndUpdate(userId, { resumePath: filePath });
+    // Create public-facing URL path
+    const publicPath = `/resumes/${path.basename(filePath)}`;
 
-    res.status(200).json({ message: "Resume uploaded successfully!" });
+    // Save public path to MongoDB
+    await User.findByIdAndUpdate(userId, { resumePath: publicPath });
+
+    // Send this path to frontend
+    res.status(200).json({
+      message: "Resume uploaded successfully!",
+      resumeUrl: publicPath
+    });
   } catch (error) {
     console.error("Resume upload error:", error);
     res.status(500).json({ error: "Failed to upload resume" });
   }
 });
+app.get("/api/get-resume", async (req, res) => {
+  try {
+    const { name } = req.query;
+    if (!name) {
+      return res.status(400).json({ error: "Name is required" });
+    }
+
+    const user = await User.findOne({ name });
+
+    if (!user || !user.resumePath) {
+      return res.status(404).json({ error: "Resume not found for this user" });
+    }
+
+    res.status(200).json({ resumeUrl: user.resumePath });
+  } catch (error) {
+    console.error("Error fetching resume:", error);
+    res.status(500).json({ error: "Failed to fetch resume" });
+  }
+});
+
 
 
 
