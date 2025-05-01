@@ -193,6 +193,7 @@ io.on("connection", (socket) => {
     if (room.users.size === 2) {
       socket.to(roomId).emit("start-call");
     }
+    
   });
 
   socket.on("codeChange", ({ roomId, code }) => {
@@ -255,6 +256,10 @@ io.on("connection", (socket) => {
   socket.on("ice-candidate", ({ roomId, candidate }) => {
     socket.to(roomId).emit("ice-candidate", { candidate });
   });
+  socket.on("malpractice", ({ roomId }) => {
+    socket.to(roomId).emit("malpractice");
+  });
+  
 
   socket.on("leaveRoom", () => {
     if (currentRoom && currentUser && rooms.has(currentRoom)) {

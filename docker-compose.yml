@@ -3,10 +3,20 @@ version: "3.9"
 services:
   backend:
     build: ./backend
-    container_name: code_editor-backend
+    container_name: smart-backend
     ports:
       - "5000:5000"
     volumes:
       - ./backend:/app
     restart: always
-    # network_mode: "host" # optional - only for Linux users
+
+  frontend:
+    build: ./frontend
+    container_name: smart-frontend
+    ports:
+      - "5173:5173"
+    # ✅ Remove the volume for frontend during build
+    # Commented out to avoid overriding the build
+    # volumes:
+    #   - ./frontend:/app
+    restart: always

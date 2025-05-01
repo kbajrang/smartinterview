@@ -1,8 +1,18 @@
-FROM node:18
+# backend/Dockerfile
+FROM node:20-alpine
 
+# Create app directory
 WORKDIR /app
-COPY . .
+
+# Install dependencies
+COPY package*.json ./
 RUN npm install
 
+# Copy source code
+COPY . .
+
+# Expose backend port
 EXPOSE 5000
-CMD ["node", "index.js"]
+
+# Start the backend
+CMD ["npm", "start"]

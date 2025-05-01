@@ -19,7 +19,9 @@ const IntervieweePage = () => {
     }
 
     setJoining(true);
-    navigate(`/room/${trimmedRoomId}?role=interviewee&name=${encodeURIComponent(trimmedUsername)}`);
+    navigate(
+      `/room/${trimmedRoomId}?role=interviewee&name=${encodeURIComponent(trimmedUsername)}`
+    );
   };
 
   return (

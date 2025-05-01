@@ -1,4 +1,3 @@
-// src/VideoChat.jsx
 import React, { useEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 
@@ -12,6 +11,9 @@ const VideoChat = ({ socket, roomId }) => {
   const peerConnection = useRef(null);
   const localStreamRef = useRef(null);
   const [mediaError, setMediaError] = useState(false);
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const role = urlParams.get("role");
 
   useEffect(() => {
     const startLocalVideo = async () => {
@@ -29,8 +31,9 @@ const VideoChat = ({ socket, roomId }) => {
         });
 
         peerConnection.current.ontrack = (event) => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = event.streams[0];
+          const stream = event.streams[0];
+          if (remoteVideoRef.current && !remoteVideoRef.current.srcObject) {
+            remoteVideoRef.current.srcObject = stream;
           }
         };
 
@@ -90,7 +93,7 @@ const VideoChat = ({ socket, roomId }) => {
         localStreamRef.current.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [socket, roomId]);
+  }, [socket, roomId, role]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
