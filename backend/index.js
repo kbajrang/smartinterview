@@ -14,8 +14,16 @@ import fetch from "node-fetch"; // ⬅️ Important: Add at the top of index.js 
 import mongoose from "mongoose";
 import User from "./models/User.js";
 import multer from "multer"; // (Will use later for Resume upload)
+import Interviewer from "./models/interviewer.js"; // ✅ CORRECT
+import interviewerRoutes from "./routes/interviewer.js";  // ✅ Import
+import inviteRouter from "./routes/invite.js";  // ✅ Make sure this path is correct
+import Resume from "./models/Resume.js";
+import PasteLog from "./models/PasteLog.js"; // ⬅️ Add this at top with other model imports
 
-const MONGO_URI = "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"; // <--- paste your MongoDB Atlas URL
+
+
+
+const MONGO_URI = "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/SmartInterviewSystem?retryWrites=true&w=majority&appName=Cluster0";
 mongoose.connect(MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -54,8 +62,10 @@ app.use(cors({
   methods: ["GET", "POST", "OPTIONS"],
   credentials: true,
 }));
+app.use(express.json()); // ✅ REQUIRED for req.body to work
+app.use("/api", interviewerRoutes);  // ✅ mount route prefix
+app.use("/api", inviteRouter);  // ✅ This enables /api/send-invite
 
-app.use(express.json()); // ✅ REQUIRED for parsing req.body
 
 app.use("/resumes", express.static(path.join(__dirname, "uploads/resumes")));
 
@@ -98,6 +108,40 @@ app.post("/api/append-transcript", (req, res) => {
     res.status(500).json({ error: "Failed to append transcript" });
   }
 });
+
+app.get("/api/get-email-by-room", async (req, res) => {
+  try {
+    const { roomId } = req.query;
+    if (!roomId) return res.status(400).json({ error: "roomId missing" });
+
+    const doc = await Interviewer.findOne({ roomId });
+    if (!doc) return res.status(404).json({ error: "Email not found" });
+
+    res.status(200).json({ email: doc.email });
+  } catch (error) {
+    console.error("Email fetch error:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
+app.post("/api/store-paste-db", async (req, res) => {
+  try {
+    const { roomId, name, pastedText } = req.body;
+
+    if (!roomId || !name || !pastedText) {
+      return res.status(400).json({ error: "Missing roomId, name, or pastedText" });
+    }
+
+    await PasteLog.create({ roomId, name, pastedText });
+
+    res.status(200).json({ message: "Paste saved to DB" });
+  } catch (error) {
+    console.error("Paste DB error:", error);
+    res.status(500).json({ error: "Failed to save paste to DB" });
+  }
+});
 app.post("/api/register", async (req, res) => {
   try {
     const { name, phone, email, role, age } = req.body;
@@ -117,48 +161,47 @@ app.post("/api/register", async (req, res) => {
 });
 app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
   try {
-    const { userId } = req.body;
-    const filePath = req.file.path; // Full path like uploads/resumes/171442xxxx.pdf
+    const { name, roomId } = req.body;
+    const filePath = req.file.path;
 
-    if (!userId || !filePath) {
-      return res.status(400).json({ error: "Missing userId or file" });
+    if (!name || !roomId || !filePath) {
+      return res.status(400).json({ error: "Missing name, roomId, or file" });
     }
 
-    // Create public-facing URL path
     const publicPath = `/resumes/${path.basename(filePath)}`;
 
-    // Save public path to MongoDB
-    await User.findByIdAndUpdate(userId, { resumePath: publicPath });
+    await Resume.create({ name, roomId, resumePath: publicPath });
 
-    // Send this path to frontend
     res.status(200).json({
       message: "Resume uploaded successfully!",
-      resumeUrl: publicPath
+      resumeUrl: publicPath,
     });
   } catch (error) {
     console.error("Resume upload error:", error);
     res.status(500).json({ error: "Failed to upload resume" });
   }
 });
+
 app.get("/api/get-resume", async (req, res) => {
   try {
-    const { name } = req.query;
-    if (!name) {
-      return res.status(400).json({ error: "Name is required" });
+    const { roomId } = req.query;
+    if (!roomId) {
+      return res.status(400).json({ error: "Room ID is required" });
     }
 
-    const user = await User.findOne({ name });
+    const resumeDoc = await Resume.findOne({ roomId });
 
-    if (!user || !user.resumePath) {
-      return res.status(404).json({ error: "Resume not found for this user" });
+    if (!resumeDoc || !resumeDoc.resumePath) {
+      return res.status(404).json({ error: "Resume not found for this room" });
     }
 
-    res.status(200).json({ resumeUrl: user.resumePath });
+    res.status(200).json({ resumeUrl: resumeDoc.resumePath });
   } catch (error) {
     console.error("Error fetching resume:", error);
     res.status(500).json({ error: "Failed to fetch resume" });
   }
 });
+
 
 
 

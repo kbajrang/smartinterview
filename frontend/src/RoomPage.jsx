@@ -1,18 +1,11 @@
 // src/RoomPage.jsx
 import React, { useEffect, useState, useRef } from "react";
-import { useParams, useSearchParams, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import VideoChat from "./VideoChat";
 import socket from "./socket";
 import axios from "axios";
 import "./App.css";
-
-function enterFullScreen() {
-  const elem = document.documentElement;
-  if (elem.requestFullscreen) elem.requestFullscreen();
-  else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-  else if (elem.msRequestFullscreen) elem.msRequestFullscreen();
-}
 
 const RoomPage = () => {
   const { roomId } = useParams();
@@ -28,11 +21,11 @@ const RoomPage = () => {
   const [users, setUsers] = useState([]);
   const [typing, setTyping] = useState("");
   const [output, setOutput] = useState("");
-  const [copySuccess, setCopySuccess] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [violationCount, setViolationCount] = useState(0);
   const [clipboardLog, setClipboardLog] = useState([]);
+  const [intervieweeEmail, setIntervieweeEmail] = useState("");
 
   const recognitionRef = useRef(null);
 
@@ -42,50 +35,6 @@ const RoomPage = () => {
     javascript: "16.3.0",
     python: "3.10.0",
   };
-
-  useEffect(() => {
-    if (role === "interviewee") {
-      enterFullScreen();
-
-      const handleTabSwitch = () => {
-        alert("⚠️ Switching tabs is not allowed during the interview.");
-        socket.emit("malpractice", { roomId });
-      };
-
-      const handleExitFullscreen = () => {
-        if (!document.fullscreenElement) {
-          alert("⚠️ Exiting full screen is considered malpractice.");
-          socket.emit("malpractice", { roomId });
-        }
-      };
-
-      const handleCopy = () => {
-        const copiedText = window.getSelection().toString();
-        if (copiedText.trim()) {
-          setClipboardLog((prev) => [...prev, `📋 Copied: ${copiedText}`]);
-        }
-      };
-
-      const handlePaste = (e) => {
-        const pastedText = e.clipboardData.getData("text");
-        if (pastedText.trim()) {
-          setClipboardLog((prev) => [...prev, `📥 Pasted: ${pastedText}`]);
-        }
-      };
-
-      window.addEventListener("blur", handleTabSwitch);
-      document.addEventListener("fullscreenchange", handleExitFullscreen);
-      document.addEventListener("copy", handleCopy);
-      document.addEventListener("paste", handlePaste);
-
-      return () => {
-        window.removeEventListener("blur", handleTabSwitch);
-        document.removeEventListener("fullscreenchange", handleExitFullscreen);
-        document.removeEventListener("copy", handleCopy);
-        document.removeEventListener("paste", handlePaste);
-      };
-    }
-  }, [role, roomId]);
 
   useEffect(() => {
     if (!roomId || !name) {
@@ -128,6 +77,32 @@ const RoomPage = () => {
     };
   }, [roomId, name, navigate]);
 
+  // 🎯 Fetch real interviewee email from backend using roomId
+  useEffect(() => {
+    const fetchIntervieweeEmail = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+        setIntervieweeEmail(res.data.email);
+      } catch (err) {
+        console.error("❌ Failed to fetch interviewee email:", err);
+      }
+    };
+    if (role === "interviewer") fetchIntervieweeEmail();
+  }, [roomId, role]);
+
+  useEffect(() => {
+    if (role === "interviewee") {
+      const handleTabSwitch = () => {
+        setViolationCount((prev) => prev + 1);
+        socket.emit("malpractice", { roomId });
+      };
+      window.addEventListener("blur", handleTabSwitch);
+      return () => {
+        window.removeEventListener("blur", handleTabSwitch);
+      };
+    }
+  }, [role, roomId]);
+
   const handleViewClipboardLog = () => {
     const logText = clipboardLog.join("\n") || "No clipboard activity recorded.";
     const newWindow = window.open("", "_blank");
@@ -152,21 +127,38 @@ const RoomPage = () => {
     socket.emit("compileCode", { roomId, code, language, version });
   };
 
-  const handleLeave = () => {
-    socket.emit("leaveRoom");
-    navigate("/");
+  const handleLeave = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+      const intervieweeEmail = res.data.email;
+  
+      socket.emit("leaveRoom");
+      navigate(`/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=normal`);
+    } catch (err) {
+      console.error("Failed to fetch interviewee email:", err);
+      alert("⚠️ Email not found.");
+      socket.emit("leaveRoom");
+      navigate("/");
+    }
   };
+  
 
-  const endInterview = () => {
-    alert("Interview ended due to multiple malpractice events.");
-    navigate("/");
+  const endInterview = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+      const intervieweeEmail = res.data.email;
+  
+      alert("Interview ended due to multiple malpractice events.");
+      socket.emit("leaveRoom");
+      navigate(`/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=malpractice`);
+    } catch (err) {
+      console.error("Failed to fetch interviewee email:", err);
+      alert("⚠️ Email not found.");
+      socket.emit("leaveRoom");
+      navigate("/");
+    }
   };
-
-  const copyRoomId = () => {
-    navigator.clipboard.writeText(roomId);
-    setCopySuccess("Copied");
-    setTimeout(() => setCopySuccess(""), 2000);
-  };
+  
 
   const startTranscription = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -228,7 +220,7 @@ const RoomPage = () => {
       const interviewee = users.find((u) => u !== name);
       if (!interviewee) return alert("Interviewee not found in room.");
 
-      const response = await axios.get(`http://localhost:5000/api/get-resume?name=${encodeURIComponent(interviewee)}`);
+      const response = await axios.get(`http://localhost:5000/api/get-resume?roomId=${roomId}`);
       const { resumeUrl } = response.data;
 
       if (resumeUrl) {
@@ -260,28 +252,13 @@ const RoomPage = () => {
             <button className="copy-button" onClick={handleViewClipboardLog}>📋 View Copied Texts</button>
             <p style={{ color: "red", fontWeight: "bold" }}>⚠️ Tab Switches: {violationCount}</p>
             <button className="leave-button" onClick={endInterview}>End Interview</button>
+            <button className="leave-button" onClick={handleLeave}>Leave Interview</button>
           </>
         )}
-
-        <div className="room-info">
-          <h2>Room ID</h2>
-          <code>{roomId}</code>
-          <button className="copy-button" onClick={copyRoomId}>Copy Room ID</button>
-          {copySuccess && <p className="copy-success">{copySuccess}</p>}
-        </div>
 
         <h3>Users in Room</h3>
         <ul>{users.map((user, idx) => <li key={idx}>{user.slice(0, 12)}</li>)}</ul>
         <p className="typing-indicator">{typing}</p>
-
-        <select className="language-selector" value={language} onChange={handleLanguageChange}>
-          <option value="java">Java</option>
-          <option value="cpp">C++</option>
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-        </select>
-
-        <button className="leave-button" onClick={handleLeave}>Leave Room</button>
       </div>
 
       <div className="editor-wrapper">
@@ -298,6 +275,16 @@ const RoomPage = () => {
             readOnly={role !== "interviewer"}
             className="question-content"
           />
+        </div>
+
+        {/* 🎯 Language Selector repositioned to top right */}
+        <div className="language-dropdown-top-right">
+          <select value={language} onChange={handleLanguageChange}>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+          </select>
         </div>
 
         <Editor
@@ -321,6 +308,7 @@ const RoomPage = () => {
       </div>
     </div>
   );
+
 };
 
 export default RoomPage;

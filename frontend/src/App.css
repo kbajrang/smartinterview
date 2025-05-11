@@ -1,169 +1,176 @@
-/* src/App.css - Premium Cleaned Version */
+/* Enhanced App.css for Interview System */
 
 :root {
+  --primary-color: #4f46e5;
+  --bg-dark: #121212;
+  --text-light: #ecf0f1;
   font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  background-color: #121212;
-  color: #ecf0f1;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
 }
 
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
   height: 100vh;
   width: 100vw;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
 }
 
-/* Join Page Form */
 .join-container {
   display: flex;
   justify-content: center;
   align-items: center;
   height: 100vh;
-  width: 100vw;
   background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
 }
 
 .join-form {
   background-color: #fff;
   color: #333;
-  padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+  padding: 2.5rem;
+  border-radius: 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
   text-align: center;
-  width: 340px;
-}
-
-.join-form input {
   width: 100%;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  font-size: 1rem;
+  max-width: 400px;
+  transition: transform 0.3s ease;
 }
 
+.join-form input,
 .join-form button {
   width: 100%;
-  padding: 0.75rem;
-  background-color: #4a90e2;
-  color: white;
-  border: none;
-  border-radius: 10px;
+  padding: 0.8rem;
   font-size: 1rem;
-  cursor: pointer;
+  border-radius: 12px;
+  margin-bottom: 1rem;
   transition: all 0.3s ease;
 }
 
-.join-form button:hover {
-  background-color: #357abd;
+.join-form input {
+  border: 1px solid #ccc;
 }
 
-/* Interview Room Layout */
+.join-form input:focus {
+  border-color: var(--primary-color);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.join-form button {
+  background-color: var(--primary-color);
+  color: #fff;
+  border: none;
+  font-weight: bold;
+}
+
+.join-form button:hover {
+  background-color: #4338ca;
+}
+
 .editor-container {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background-color: #121212;
+  background-color: var(--bg-dark);
 }
 
-/* Sidebar */
 .sidebar {
   width: 300px;
   padding: 1rem;
   background-color: #1e2a38;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 1rem;
   overflow-y: auto;
   border-right: 1px solid #2c3e50;
-  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 10px rgba(0, 0, 0, 0.15);
 }
 
 .sidebar video {
-  width: 260px;
-  height: 180px;
+  width: 100%;
+  height: auto;
   border-radius: 12px;
   background-color: #000;
   object-fit: cover;
   box-shadow: 0px 0px 10px #000;
 }
 
-/* Room Info Block */
 .room-info {
   background: #22303c;
   padding: 1rem;
   border-radius: 12px;
-  width: 100%;
   text-align: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 10px 
+  .language-dropdown-top-right {
+  position: absolute;
+  top: 110px;
+  right: 40px;
+  z-index: 10;
 }
 
-.room-info h2 {
-  font-size: 1.1rem;
-  margin-bottom: 0.5rem;
-  color: #ecf0f1;
+.language-dropdown-top-right select {
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+}
+rgba(0, 0, 0, 0.3);
+}
+
+.copy-button,
+.leave-button,
+.language-selector {
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  transition: background 0.3s ease;
 }
 
 .copy-button {
-  margin-top: 8px;
-  padding: 0.6rem 1rem;
   background-color: #3498db;
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .copy-button:hover {
   background-color: #2980b9;
 }
 
-/* Language Selector */
 .language-selector {
-  width: 100%;
-  padding: 0.6rem;
-  border-radius: 8px;
   background-color: #34495e;
   color: white;
-  border: none;
 }
 
-/* Leave Button */
 .leave-button {
   background-color: #e74c3c;
-  width: 100%;
+  color: white;
   margin-top: auto;
-  padding: 0.7rem;
-  font-weight: bold;
-  border: none;
-  border-radius: 10px;
-  transition: background-color 0.3s ease;
 }
 
 .leave-button:hover {
   background-color: #c0392b;
 }
 
-/* Typing Indicator */
 .typing-indicator {
-  font-size: 12px;
+  font-size: 13px;
   color: #bdc3c7;
 }
 
-/* Editor + Question Section */
 .editor-wrapper {
   flex-grow: 1;
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  background-color: #121212;
+  background-color: var(--bg-dark);
+  overflow: hidden;
 }
 
-/* Coding Question Box */
 .question-box {
   background-color: #22303c;
   padding: 1rem;
@@ -179,61 +186,47 @@ body {
   align-items: center;
 }
 
-.question-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
 .question-content {
-  margin-top: 10px;
   width: 100%;
   height: 100px;
-  resize: none;
   font-size: 14px;
   padding: 10px;
   background-color: #34495e;
   color: white;
   border-radius: 8px;
   border: none;
+  resize: none;
 }
 
-/* Monaco Editor */
-.monaco-editor {
-  flex-grow: 1;
-}
-
-/* Execute Button */
 .run-btn {
-  margin-top: 10px;
-  align-self: flex-start;
   background-color: #2ecc71;
+  color: white;
+  padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 8px;
-  padding: 0.6rem 1.2rem;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  margin-top: 10px;
+  align-self: flex-start;
+  transition: background 0.3s ease;
 }
 
 .run-btn:hover {
   background-color: #27ae60;
 }
 
-/* Output Console */
 .output-console {
   margin-top: 12px;
   padding: 12px;
   font-size: 15px;
   height: 150px;
-  width: 100%;
   background-color: #1f2937;
-  color: #fff;
+  color: white;
   border-radius: 10px;
   border-top: 2px solid #2ecc71;
   box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
 
-/* Transcript Box */
 .transcript-box {
   background-color: #1e2a38;
   padding: 10px;
@@ -241,28 +234,377 @@ body {
   margin-top: 12px;
   color: white;
   box-shadow: inset 0 0 5px rgba(0,0,0,0.3);
+  font-size: 14px;
 }
 
-/* Responsive Design */
 @media (max-width: 768px) {
   .editor-container {
     flex-direction: column;
   }
-
   .sidebar {
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: center;
   }
-
   .editor-wrapper {
     width: 100%;
     padding: 0.5rem;
   }
-
   .sidebar video {
-    width: 150px;
-    height: 120px;
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+  }
+}
+/* Enhanced App.css for Interview System - Fullscreen Responsive Dashboard */
+
+:root {
+  --primary-color: #4f46e5;
+  --bg-dark: #121212;
+  --text-light: #ecf0f1;
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg-dark);
+  color: var(--text-light);
+  overflow: hidden;
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(to right, #1e3a8a, #4f46e5);
+  color: #ffffff;
+  padding: 2rem;
+  box-sizing: border-box;
+  gap: 2rem;
+}
+
+.dashboard-left,
+.dashboard-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.dashboard-header {
+  font-size: 2.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #facc15;
+}
+
+.invite-section {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  max-width: 100%;
+}
+
+.section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.invite-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.invite-form input {
+  padding: 0.8rem;
+  border-radius: 10px;
+  border: none;
+  font-size: 1rem;
+  background-color: #ffffff;
+  color: #111;
+  transition: box-shadow 0.2s ease;
+}
+
+.invite-form input:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4);
+}
+
+.invite-button {
+  padding: 0.85rem;
+  background-color: var(--primary-color);
+  border: none;
+  color: white;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.invite-button:hover {
+  background-color: #4338ca;
+}
+
+.status-message {
+  margin-top: 1rem;
+  font-weight: bold;
+  font-size: 1rem;
+  color: #facc15;
+}
+
+.empty-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.placeholder-text {
+  font-size: 1rem;
+  color: #d1d5db;
+}
+
+.interview-card {
+  background: #1e1e2e;
+  padding: 1.2rem;
+  border-radius: 12px;
+  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  color: #fff;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease;
+}
+
+.interview-card:hover {
+  transform: translateY(-4px);
+}
+
+.interview-card p {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+}
+
+.join-button {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.6rem 1rem;
+  background: #10b981;
+  color: white;
+  font-weight: bold;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.3s ease;
+}
+
+.join-button:hover {
+  background: #059669;
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  .dashboard-left,
+  .dashboard-right {
+    width: 100%;
+  }
+}
+/* PreInterviewCheck - Modern Balanced Layout */
+
+.precheck-container {
+  display: flex;
+  height: 100vh;
+  background: #0f172a;
+  font-family: 'Inter', sans-serif;
+  color: white;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.left-panel, .right-panel {
+  background: #f8fafc;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  padding: 2rem;
+  max-width: 400px;
+  width: 100%;
+  color: #111;
+}
+
+.left-panel {
+  margin-right: 3rem;
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+}
+
+.left-panel h3 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: #1f2937;
+  border-bottom: 2px solid #cbd5e1;
+  padding-bottom: 0.5rem;
+}
+
+.input-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background-color: white;
+  transition: 0.2s;
+}
+
+.custom-input:focus {
+  outline: none;
+  border-color: #6366f1;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.resume-note {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-top: 0.4rem;
+}
+
+.right-panel {
+  background: #111827;
+  border: 1px solid #1e293b;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem;
+  color: white;
+}
+
+.right-panel h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #facc15;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.camera-box {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 2px solid #4b5563;
+  margin-bottom: 1rem;
+  background-color: black;
+}
+
+.camera-box video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.status-ok {
+  color: #22c55e;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.status-fail {
+  color: #ef4444;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.mic-bar {
+  height: 12px;
+  width: 100%;
+  background-color: #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.mic-bar-fill {
+  height: 100%;
+  background-color: #10b981;
+  transition: width 0.3s;
+}
+
+.mic-fail {
+  background-color: #ef4444;
+}
+
+.term-check {
+  margin: 1.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+}
+
+.term-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #6366f1;
+}
+
+.proceed-btn {
+  width: 100%;
+  padding: 1rem;
+  font-weight: 700;
+  font-size: 1.1rem;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.proceed-btn:disabled {
+  background-color: #6b7280;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .precheck-container {
+    flex-direction: column;
+    padding: 1rem;
+  }
+  .left-panel, .right-panel {
+    max-width: 100%;
+    margin: 0 auto;
+    margin-bottom: 2rem;
   }
 }
