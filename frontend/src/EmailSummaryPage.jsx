@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
-import "./App.css";
+import "./EmailSummaryPage.css";
 
 const defaultMessages = {
   malpractice: `Dear Candidate,
@@ -32,11 +32,12 @@ const EmailSummaryPage = () => {
   const [message, setMessage] = useState("");
   const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
+  const [personalNote, setPersonalNote] = useState("");
+  const [pdfPath, setPdfPath] = useState(null);
 
   useEffect(() => {
     setMessage(defaultMessages[type] || "");
 
-    // Fetch transcript from localStorage
     const saved = localStorage.getItem("interviewTranscript");
     if (saved) {
       setTranscript(saved);
@@ -45,13 +46,31 @@ const EmailSummaryPage = () => {
     }
   }, [type]);
 
+  const handleGeneratePDF = async () => {
+    try {
+      const res = await axios.post("https://llmintegrationmp.onrender.com/api/analyze", {
+        email,
+        roomId,
+        transcript,
+      });
+
+      const pdfUrl = res.data.pdf;
+      setPdfPath(pdfUrl);
+      alert("✅ PDF feedback generated!");
+    } catch (error) {
+      console.error("LLM PDF generation failed:", error);
+      alert("❌ Failed to generate PDF.");
+    }
+  };
+
   const handleSend = async () => {
     try {
       await axios.post("http://localhost:5000/api/send-summary", {
         email,
         roomId,
         type,
-        content: message,
+        content: message + "\n\n" + personalNote,
+        pdf: pdfPath, // 👈 Pass PDF URL for backend to fetch and attach
       });
       setStatus("✅ Email sent successfully!");
       setTimeout(() => navigate("/"), 2000);
@@ -61,58 +80,39 @@ const EmailSummaryPage = () => {
     }
   };
 
-  const handleGeneratePDF = async () => {
-    try {
-      const res = await axios.post("https://llmintegrationmp.onrender.com/api/analyze", {
-        email,
-        roomId,
-        transcript, // ✅ transcript passed to backend
-      });
-
-      const pdfUrl = res.data.pdf;
-      alert("✅ PDF feedback generated!");
-      window.open(pdfUrl, "_blank");
-    } catch (error) {
-      console.error("LLM PDF generation failed:", error);
-      alert("❌ Failed to generate PDF.");
-    }
-  };
-
   return (
-    <div className="join-container" style={{ padding: "2rem" }}>
-      <div className="join-form" style={{ width: "600px" }}>
+    <div className="email-wrapper">
+      <div className="email-card">
         <h2>📧 Final Email to Candidate</h2>
         <p><strong>To:</strong> {email}</p>
+
+        <label>Default Message:</label>
         <textarea
-          rows={12}
-          style={{
-            width: "100%",
-            padding: "1rem",
-            marginTop: "1rem",
-            borderRadius: "10px",
-            background: "#2d2d2d",
-            color: "#f5f5f5",
-            fontFamily: "monospace",
-            fontSize: "14px",
-          }}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
 
-        <button className="invite-button" onClick={handleSend} style={{ marginTop: "1rem" }}>
-          Send Email
+        <label>💬 Personal Feedback (Optional):</label>
+        <textarea
+          placeholder="Write any personal note or detailed comment to include in the email..."
+          value={personalNote}
+          onChange={(e) => setPersonalNote(e.target.value)}
+        />
+
+        <button className="send-button" onClick={handleSend}>
+          📤 Send Email with Feedback
         </button>
 
         <button
-          className="invite-button"
-          style={{ marginTop: "1rem", backgroundColor: "#1e40af" }}
+          className="send-button"
+          style={{ backgroundColor: "#1e40af" }}
           onClick={handleGeneratePDF}
         >
           📄 Generate Feedback PDF
         </button>
 
         {status && (
-          <p className="status-message" style={{ marginTop: "1rem", color: status.startsWith("✅") ? "lime" : "gold" }}>
+          <p className={`status-message ${status.startsWith("✅") ? "success" : "error"}`}>
             {status}
           </p>
         )}
