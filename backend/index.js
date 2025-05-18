@@ -15,21 +15,29 @@ import mongoose from "mongoose";
 import User from "./models/User.js";
 import multer from "multer"; // (Will use later for Resume upload)
 import Interviewer from "./models/interviewer.js"; // ✅ CORRECT
-import interviewerRoutes from "./routes/interviewer.js";  // ✅ Import
-import inviteRouter from "./routes/invite.js";  // ✅ Make sure this path is correct
+import interviewerRoutes from "./routes/interviewer.js"; // ✅ Import
+import inviteRouter from "./routes/invite.js"; // ✅ Make sure this path is correct
 import Resume from "./models/Resume.js";
 import PasteLog from "./models/PasteLog.js"; // ⬅️ Add this at top with other model imports
 
+const MONGO_URI =
+  "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/SmartInterviewSystem?retryWrites=true&w=majority&appName=Cluster0";
+mongoose
+  .connect(MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((error) => console.error("❌ MongoDB connection error:", error));
 
+dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-const MONGO_URI = "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/SmartInterviewSystem?retryWrites=true&w=majority&appName=Cluster0";
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((error) => console.error("❌ MongoDB connection error:", error));
+// Ensure resume directory exists
+const uploadsDir = path.join(__dirname, "uploads", "resumes");
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
 // Setup storage for resumes
 const storage = multer.diskStorage({
@@ -37,35 +45,31 @@ const storage = multer.diskStorage({
     cb(null, "uploads/resumes"); // Save in uploads/resumes folder
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
+  },
 });
 
 const upload = multer({ storage: storage });
-
-
-
-
-dotenv.config();
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST", "OPTIONS"],
-  credentials: true,
-}));
-app.use(express.json()); // ✅ REQUIRED for req.body to work
-app.use("/api", interviewerRoutes);  // ✅ mount route prefix
-app.use("/api", inviteRouter);  // ✅ This enables /api/send-invite
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+  })
+);
+// app.use(express.json()); // ✅ REQUIRED for req.body to work
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+app.use("/api", interviewerRoutes); // ✅ mount route prefix
+app.use("/api", inviteRouter); // ✅ This enables /api/send-invite
 
 app.use("/resumes", express.static(path.join(__dirname, "uploads/resumes")));
 
@@ -124,14 +128,14 @@ app.get("/api/get-email-by-room", async (req, res) => {
   }
 });
 
-
-
 app.post("/api/store-paste-db", async (req, res) => {
   try {
     const { roomId, name, pastedText } = req.body;
 
     if (!roomId || !name || !pastedText) {
-      return res.status(400).json({ error: "Missing roomId, name, or pastedText" });
+      return res
+        .status(400)
+        .json({ error: "Missing roomId, name, or pastedText" });
     }
 
     await PasteLog.create({ roomId, name, pastedText });
@@ -159,23 +163,21 @@ app.post("/api/register", async (req, res) => {
     res.status(500).json({ error: "Registration failed" });
   }
 });
-app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
+app.post("/api/upload-resume", async (req, res) => {
   try {
-    const { name, roomId } = req.body;
-    const filePath = req.file.path;
-
-    if (!name || !roomId || !filePath) {
-      return res.status(400).json({ error: "Missing name, roomId, or file" });
+    const { name, roomId, file, filename, contentType } = req.body;
+    if (!name || !roomId || !file || !filename || !contentType) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const publicPath = `/resumes/${path.basename(filePath)}`;
-
-    await Resume.create({ name, roomId, resumePath: publicPath });
-
-    res.status(200).json({
-      message: "Resume uploaded successfully!",
-      resumeUrl: publicPath,
+    await Resume.create({
+      name,
+      roomId,
+      resumeBase64: file,
+      filename,
+      contentType,
     });
+    res.status(200).json({ message: "Resume uploaded successfully" });
   } catch (error) {
     console.error("Resume upload error:", error);
     res.status(500).json({ error: "Failed to upload resume" });
@@ -185,26 +187,18 @@ app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
 app.get("/api/get-resume", async (req, res) => {
   try {
     const { roomId } = req.query;
-    if (!roomId) {
-      return res.status(400).json({ error: "Room ID is required" });
-    }
+    const resume = await Resume.findOne({ roomId });
+    if (!resume) return res.status(404).json({ error: "Not found" });
 
-    const resumeDoc = await Resume.findOne({ roomId });
-
-    if (!resumeDoc || !resumeDoc.resumePath) {
-      return res.status(404).json({ error: "Resume not found for this room" });
-    }
-
-    res.status(200).json({ resumeUrl: resumeDoc.resumePath });
-  } catch (error) {
-    console.error("Error fetching resume:", error);
-    res.status(500).json({ error: "Failed to fetch resume" });
+    res.status(200).json({
+      base64: resume.resumeBase64,
+      filename: resume.filename,
+      contentType: resume.contentType,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching resume" });
   }
 });
-
-
-
-
 
 // WebSocket logic
 const rooms = new Map();
@@ -216,7 +210,12 @@ io.on("connection", (socket) => {
 
   socket.on("join", ({ roomId, Username }) => {
     if (!roomId || !Username) return;
-    const room = rooms.get(roomId) || { users: new Set(), code: "", output: "", question: "" };
+    const room = rooms.get(roomId) || {
+      users: new Set(),
+      code: "",
+      output: "",
+      question: "",
+    };
     if (room.users.size >= 2) {
       socket.emit("roomFull");
       return;
@@ -232,11 +231,12 @@ io.on("connection", (socket) => {
 
     socket.emit("codeUpdate", room.code);
     socket.emit("questionUpdate", room.question);
+    socket.emit("languageUpdate", room.language || "java");
+    socket.emit("versionUpdate", room.version || "15.0.2");
 
     if (room.users.size === 2) {
       socket.to(roomId).emit("start-call");
     }
-    
   });
 
   socket.on("codeChange", ({ roomId, code }) => {
@@ -257,8 +257,13 @@ io.on("connection", (socket) => {
     socket.to(roomId).emit("userTyping", Username);
   });
 
-  socket.on("languageChange", ({ roomId, language }) => {
+  socket.on("languageChange", ({ roomId, language, version }) => {
+    if (rooms.has(roomId)) {
+      rooms.get(roomId).language = language;
+      rooms.get(roomId).version = version;
+    }
     io.to(roomId).emit("languageUpdate", language);
+    io.to(roomId).emit("versionUpdate", version);
   });
 
   socket.on("compileCode", async ({ code, roomId, language, version }) => {
@@ -268,7 +273,8 @@ io.on("connection", (socket) => {
     lastCompileTime = Date.now();
 
     try {
-      const pistonApiUrl = process.env.PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
+      const pistonApiUrl =
+        process.env.PISTON_API_URL || "https://emkc.org/api/v2/piston/execute";
 
       const response = await axios.post(pistonApiUrl, {
         language,
@@ -281,7 +287,10 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("codeResponse", response.data);
       }
     } catch (error) {
-      console.error("❌ Compile error:", error?.response?.data || error.message);
+      console.error(
+        "❌ Compile error:",
+        error?.response?.data || error.message
+      );
       io.to(roomId).emit("codeResponse", {
         run: { output: "Error: Compilation failed or API unavailable." },
       });
@@ -302,12 +311,14 @@ io.on("connection", (socket) => {
   socket.on("malpractice", ({ roomId }) => {
     socket.to(roomId).emit("malpractice");
   });
-  
 
   socket.on("leaveRoom", () => {
     if (currentRoom && currentUser && rooms.has(currentRoom)) {
       rooms.get(currentRoom).users.delete(currentUser);
-      io.to(currentRoom).emit("userJoined", Array.from(rooms.get(currentRoom).users));
+      io.to(currentRoom).emit(
+        "userJoined",
+        Array.from(rooms.get(currentRoom).users)
+      );
       socket.leave(currentRoom);
     }
     currentRoom = null;
@@ -317,7 +328,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     if (currentRoom && currentUser && rooms.has(currentRoom)) {
       rooms.get(currentRoom).users.delete(currentUser);
-      io.to(currentRoom).emit("userJoined", Array.from(rooms.get(currentRoom).users));
+      io.to(currentRoom).emit(
+        "userJoined",
+        Array.from(rooms.get(currentRoom).users)
+      );
     }
     console.log("🔌 User disconnected:", socket.id);
   });

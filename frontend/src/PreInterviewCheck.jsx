@@ -20,7 +20,8 @@ const PreInterviewCheck = () => {
   const rafId = useRef(null);
 
   useEffect(() => {
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: true })
       .then((stream) => {
         videoRef.current.srcObject = stream;
 
@@ -66,18 +67,28 @@ const PreInterviewCheck = () => {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("name", name);
-    formData.append("roomId", roomId);
-    formData.append("resume", resumeFile);
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result.split(",")[1];
 
-    try {
-      await axios.post("http://localhost:5000/api/upload-resume", formData);
-      navigate(`/room/${roomId}?role=interviewee&name=${encodeURIComponent(name)}`);
-    } catch (err) {
-      console.error("Upload error:", err);
-      alert("❌ Failed to upload resume");
-    }
+      try {
+        await axios.post("http://localhost:5000/api/upload-resume", {
+          name,
+          roomId,
+          file: base64String,
+          filename: resumeFile.name,
+          contentType: resumeFile.type,
+        });
+
+        navigate(
+          `/room/${roomId}?role=interviewee&name=${encodeURIComponent(name)}`
+        );
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("❌ Failed to upload resume");
+      }
+    };
+    reader.readAsDataURL(resumeFile);
   };
 
   return (
@@ -112,7 +123,15 @@ const PreInterviewCheck = () => {
         <p className="status-ok">📷 Camera is working</p>
 
         <div style={{ marginTop: "2rem" }}>
-          <label style={{ fontWeight: "600", marginBottom: "0.5rem", display: "block" }}>🎤 Mic Test</label>
+          <label
+            style={{
+              fontWeight: "600",
+              marginBottom: "0.5rem",
+              display: "block",
+            }}
+          >
+            🎤 Mic Test
+          </label>
           <button
             onMouseDown={startMicTest}
             onMouseUp={stopMicTest}
@@ -130,7 +149,9 @@ const PreInterviewCheck = () => {
             />
           </div>
           <p className={micWorking ? "status-ok" : "status-fail"}>
-            {micWorking ? "✅ Microphone working" : "❌ Speak louder to detect mic"}
+            {micWorking
+              ? "✅ Microphone working"
+              : "❌ Speak louder to detect mic"}
           </p>
         </div>
 
@@ -151,7 +172,11 @@ const PreInterviewCheck = () => {
           🚀 Join Interview Room
         </button>
 
-        {error && <p className="status-fail" style={{ marginTop: "1rem" }}>{error}</p>}
+        {error && (
+          <p className="status-fail" style={{ marginTop: "1rem" }}>
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

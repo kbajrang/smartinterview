@@ -40,31 +40,47 @@ const IntervieweeForm = () => {
       setJoining(true);
 
       // 1. Register user
-      const registerRes = await axios.post("http://localhost:5000/api/register", {
-        name,
-        age,
-        email,
-        phone,
-        role: "interviewee",
-        roomId,
-      });
+      const registerRes = await axios.post(
+        "http://localhost:5000/api/register",
+        {
+          name,
+          age,
+          email,
+          phone,
+          role: "interviewee",
+          roomId,
+        }
+      );
 
       const userId = registerRes.data.userId;
 
       // 2. Upload resume
-      const formData = new FormData();
-      formData.append("resume", resume);
-      formData.append("userId", userId);
+      // Read file as base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64String = reader.result.split(",")[1]; // strip data:...base64,
+        const contentType = resume.type;
 
-      const uploadRes = await axios.post("http://localhost:5000/api/upload-resume", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+        const uploadRes = await axios.post(
+          "http://localhost:5000/api/upload-resume",
+          {
+            name,
+            roomId,
+            file: base64String,
+            filename: resume.name,
+            contentType,
+          }
+        );
 
-      if (!uploadRes.data.resumeUrl) {
-        setError("Resume upload failed.");
-        setJoining(false);
-        return;
-      }
+        if (!uploadRes.data.message) {
+          setError("Resume upload failed.");
+          setJoining(false);
+          return;
+        }
+
+        navigate(`/precheck/${roomId}?name=${encodeURIComponent(name)}`);
+      };
+      reader.readAsDataURL(resume);
 
       // 3. Redirect to system check
       navigate(`/precheck/${roomId}?name=${encodeURIComponent(name)}`);

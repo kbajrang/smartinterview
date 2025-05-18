@@ -32,7 +32,7 @@ const RoomPage = () => {
   const languageVersions = {
     java: "15.0.2",
     cpp: "10.2.0",
-    javascript: "16.3.0",
+    javascript: "18.15.0",
     python: "3.10.0",
   };
 
@@ -81,7 +81,9 @@ const RoomPage = () => {
   useEffect(() => {
     const fetchIntervieweeEmail = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+        const res = await axios.get(
+          `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
+        );
         setIntervieweeEmail(res.data.email);
       } catch (err) {
         console.error("❌ Failed to fetch interviewee email:", err);
@@ -104,7 +106,8 @@ const RoomPage = () => {
   }, [role, roomId]);
 
   const handleViewClipboardLog = () => {
-    const logText = clipboardLog.join("\n") || "No clipboard activity recorded.";
+    const logText =
+      clipboardLog.join("\n") || "No clipboard activity recorded.";
     const newWindow = window.open("", "_blank");
     newWindow.document.write(`<pre>${logText}</pre>`);
     newWindow.document.close();
@@ -118,9 +121,16 @@ const RoomPage = () => {
 
   const handleLanguageChange = (e) => {
     const newLang = e.target.value;
+    const newVersion = languageVersions[newLang];
+
     setLanguage(newLang);
-    setVersion(languageVersions[newLang]);
-    socket.emit("languageChange", { roomId, language: newLang });
+    setVersion(newVersion);
+
+    socket.emit("languageChange", {
+      roomId,
+      language: newLang,
+      version: newVersion,
+    });
   };
 
   const handleRunCode = () => {
@@ -129,11 +139,15 @@ const RoomPage = () => {
 
   const handleLeave = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
+      );
       const intervieweeEmail = res.data.email;
-  
+
       socket.emit("leaveRoom");
-      navigate(`/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=normal`);
+      navigate(
+        `/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=normal`
+      );
     } catch (err) {
       console.error("Failed to fetch interviewee email:", err);
       alert("⚠️ Email not found.");
@@ -141,16 +155,19 @@ const RoomPage = () => {
       navigate("/");
     }
   };
-  
 
   const endInterview = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/get-email-by-room?roomId=${roomId}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
+      );
       const intervieweeEmail = res.data.email;
-  
+
       alert("Interview ended due to multiple malpractice events.");
       socket.emit("leaveRoom");
-      navigate(`/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=malpractice`);
+      navigate(
+        `/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=malpractice`
+      );
     } catch (err) {
       console.error("Failed to fetch interviewee email:", err);
       alert("⚠️ Email not found.");
@@ -158,10 +175,10 @@ const RoomPage = () => {
       navigate("/");
     }
   };
-  
 
   const startTranscription = () => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
       alert("SpeechRecognition not supported.");
       return;
@@ -209,55 +226,78 @@ const RoomPage = () => {
     link.click();
   };
 
-  const handlePostQuestion = () => {
+  // Immediately emit when interviewer types
+  const handleQuestionChange = (e) => {
+    const updatedQuestion = e.target.value;
+    setQuestion(updatedQuestion);
     if (role === "interviewer") {
-      socket.emit("postQuestion", { roomId, question });
+      socket.emit("postQuestion", { roomId, question: updatedQuestion });
     }
   };
 
   const handleViewResume = async () => {
-    try {
-      const interviewee = users.find((u) => u !== name);
-      if (!interviewee) return alert("Interviewee not found in room.");
+    const res = await axios.get(
+      `http://localhost:5000/api/get-resume?roomId=${roomId}`
+    );
+    const { base64, filename, contentType } = res.data;
 
-      const response = await axios.get(`http://localhost:5000/api/get-resume?roomId=${roomId}`);
-      const { resumeUrl } = response.data;
-
-      if (resumeUrl) {
-        window.open(`http://localhost:5000${resumeUrl}`, "_blank");
-      } else {
-        alert("No resume uploaded.");
-      }
-    } catch (error) {
-      console.error("Error fetching resume:", error);
-    }
+    const blob = new Blob(
+      [Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))],
+      { type: contentType }
+    );
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
   };
 
   return (
     <div className="editor-container">
       <div className="sidebar">
-        <VideoChat socket={socket} roomId={roomId} violationCount={violationCount} />
+        <VideoChat
+          socket={socket}
+          roomId={roomId}
+          violationCount={violationCount}
+        />
 
         {role === "interviewer" && (
           <>
-            <button className="record-btn" onClick={isRecording ? stopTranscription : startTranscription}>
+            <button
+              className="record-btn"
+              onClick={isRecording ? stopTranscription : startTranscription}
+            >
               {isRecording ? "⏹ Stop" : "🎙 Start"}
             </button>
             {transcript && (
-              <button className="copy-button" onClick={handleDownloadTranscript}>
+              <button
+                className="copy-button"
+                onClick={handleDownloadTranscript}
+              >
                 📥 Download Transcript
               </button>
             )}
-            <button className="copy-button" onClick={handleViewResume}>📄 View Resume</button>
-            <button className="copy-button" onClick={handleViewClipboardLog}>📋 View Copied Texts</button>
-            <p style={{ color: "red", fontWeight: "bold" }}>⚠️ Tab Switches: {violationCount}</p>
-            <button className="leave-button" onClick={endInterview}>End Interview</button>
-            <button className="leave-button" onClick={handleLeave}>Leave Interview</button>
+            <button className="copy-button" onClick={handleViewResume}>
+              📄 View Resume
+            </button>
+            <button className="copy-button" onClick={handleViewClipboardLog}>
+              📋 View Copied Texts
+            </button>
+            <p style={{ color: "red", fontWeight: "bold" }}>
+              ⚠️ Tab Switches: {violationCount}
+            </p>
+            <button className="leave-button" onClick={endInterview}>
+              End Interview
+            </button>
+            <button className="leave-button" onClick={handleLeave}>
+              Leave Interview
+            </button>
           </>
         )}
 
         <h3>Users in Room</h3>
-        <ul>{users.map((user, idx) => <li key={idx}>{user.slice(0, 12)}</li>)}</ul>
+        <ul>
+          {users.map((user, idx) => (
+            <li key={idx}>{user.slice(0, 12)}</li>
+          ))}
+        </ul>
         <p className="typing-indicator">{typing}</p>
       </div>
 
@@ -265,13 +305,10 @@ const RoomPage = () => {
         <div className="question-box">
           <div className="question-header">
             <h3> Coding Question</h3>
-            {role === "interviewer" && (
-              <button onClick={handlePostQuestion}>📤 Post</button>
-            )}
           </div>
           <textarea
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={handleQuestionChange}
             readOnly={role !== "interviewer"}
             className="question-content"
           />
@@ -296,8 +333,15 @@ const RoomPage = () => {
           options={{ minimap: { enabled: false }, fontSize: 16 }}
         />
 
-        <button className="run-btn" onClick={handleRunCode}>Execute</button>
-        <textarea className="output-console" readOnly value={output} placeholder="Output..." />
+        <button className="run-btn" onClick={handleRunCode}>
+          Execute
+        </button>
+        <textarea
+          className="output-console"
+          readOnly
+          value={output}
+          placeholder="Output..."
+        />
 
         {role === "interviewer" && transcript && (
           <div className="transcript-box">
@@ -308,7 +352,6 @@ const RoomPage = () => {
       </div>
     </div>
   );
-
 };
 
 export default RoomPage;

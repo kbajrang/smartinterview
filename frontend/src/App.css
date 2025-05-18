@@ -484,6 +484,7 @@ body {
   border-radius: 8px;
   background-color: white;
   transition: 0.2s;
+  color: #111827
 }
 
 .custom-input:focus {

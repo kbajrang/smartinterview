@@ -18,7 +18,10 @@ const VideoChat = ({ socket, roomId }) => {
   useEffect(() => {
     const startLocalVideo = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
         localStreamRef.current = stream;
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -39,7 +42,10 @@ const VideoChat = ({ socket, roomId }) => {
 
         peerConnection.current.onicecandidate = (event) => {
           if (event.candidate) {
-            socket.emit("ice-candidate", { roomId, candidate: event.candidate });
+            socket.emit("ice-candidate", {
+              roomId,
+              candidate: event.candidate,
+            });
           }
         };
       } catch (error) {
@@ -59,7 +65,9 @@ const VideoChat = ({ socket, roomId }) => {
 
     socket.on("video-offer", async ({ sdp }) => {
       if (!peerConnection.current) return;
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(sdp));
+      await peerConnection.current.setRemoteDescription(
+        new RTCSessionDescription(sdp)
+      );
       const answer = await peerConnection.current.createAnswer();
       await peerConnection.current.setLocalDescription(answer);
       socket.emit("video-answer", { roomId, sdp: answer });
@@ -67,13 +75,17 @@ const VideoChat = ({ socket, roomId }) => {
 
     socket.on("video-answer", async ({ sdp }) => {
       if (!peerConnection.current) return;
-      await peerConnection.current.setRemoteDescription(new RTCSessionDescription(sdp));
+      await peerConnection.current.setRemoteDescription(
+        new RTCSessionDescription(sdp)
+      );
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
       if (!peerConnection.current) return;
       try {
-        await peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
+        await peerConnection.current.addIceCandidate(
+          new RTCIceCandidate(candidate)
+        );
       } catch (error) {
         console.error("Error adding received ICE candidate", error);
       }
@@ -98,7 +110,9 @@ const VideoChat = ({ socket, roomId }) => {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
       {mediaError ? (
-        <p style={{ color: "red" }}>Camera/Mic access denied. Video call unavailable.</p>
+        <p style={{ color: "red" }}>
+          Camera/Mic access denied. Video call unavailable.
+        </p>
       ) : (
         <>
           <video
@@ -106,13 +120,23 @@ const VideoChat = ({ socket, roomId }) => {
             autoPlay
             muted
             playsInline
-            style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }}
+            style={{
+              width: "250px",
+              height: "180px",
+              borderRadius: "8px",
+              backgroundColor: "#000",
+            }}
           />
           <video
             ref={remoteVideoRef}
             autoPlay
             playsInline
-            style={{ width: "250px", height: "180px", borderRadius: "8px", backgroundColor: "#000" }}
+            style={{
+              width: "250px",
+              height: "180px",
+              borderRadius: "8px",
+              backgroundColor: "#000",
+            }}
           />
         </>
       )}
