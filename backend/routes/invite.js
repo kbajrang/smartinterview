@@ -22,7 +22,9 @@ router.post("/send-invite", async (req, res) => {
       .json({ error: "Missing email, roomId, or timeSlot" });
   }
 
-  const joinUrl = `http://localhost:5000/precheck/${roomId}?name=Candidate&role=interviewee`;
+  const joinUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/precheck/${roomId}?name=Candidate&role=interviewee`;
 
   const mailOptions = {
     from: `"Smart Interview System" <${
