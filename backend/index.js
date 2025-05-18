@@ -73,6 +73,13 @@ app.use("/api", inviteRouter); // ✅ This enables /api/send-invite
 
 app.use("/resumes", express.static(path.join(__dirname, "uploads/resumes")));
 
+//for running application on one port
+app.use(express.static(path.join(__dirname, "..", "frontend", "dist")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
+});
+
 // Folders
 const transcriptDir = path.join(__dirname, "transcripts");
 if (!fs.existsSync(transcriptDir)) fs.mkdirSync(transcriptDir);

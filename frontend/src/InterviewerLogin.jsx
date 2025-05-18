@@ -16,7 +16,7 @@ const InterviewerLogin = () => {
     }
 
     try {
-      const res = await axios.post("http://localhost:5000/api/interviewer-login", {
+      const res = await axios.post("/api/interviewer-login", {
         email,
         password,
       });
@@ -58,7 +58,11 @@ const InterviewerLogin = () => {
         <p style={{ marginTop: "1rem", fontSize: "14px" }}>
           New here?{" "}
           <span
-            style={{ color: "#007bff", cursor: "pointer", textDecoration: "underline" }}
+            style={{
+              color: "#007bff",
+              cursor: "pointer",
+              textDecoration: "underline",
+            }}
             onClick={() => navigate("/interviewer-register")}
           >
             Create an account

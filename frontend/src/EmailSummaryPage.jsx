@@ -48,11 +48,14 @@ const EmailSummaryPage = () => {
 
   const handleGeneratePDF = async () => {
     try {
-      const res = await axios.post("https://llmintegrationmp.onrender.com/api/analyze", {
-        email,
-        roomId,
-        transcript,
-      });
+      const res = await axios.post(
+        "https://llmintegrationmp.onrender.com/api/analyze",
+        {
+          email,
+          roomId,
+          transcript,
+        }
+      );
 
       const pdfUrl = res.data.pdf;
       setPdfPath(pdfUrl);
@@ -65,7 +68,7 @@ const EmailSummaryPage = () => {
 
   const handleSend = async () => {
     try {
-      await axios.post("http://localhost:5000/api/send-summary", {
+      await axios.post("/api/send-summary", {
         email,
         roomId,
         type,
@@ -84,7 +87,9 @@ const EmailSummaryPage = () => {
     <div className="email-wrapper">
       <div className="email-card">
         <h2>📧 Final Email to Candidate</h2>
-        <p><strong>To:</strong> {email}</p>
+        <p>
+          <strong>To:</strong> {email}
+        </p>
 
         <label>Default Message:</label>
         <textarea
@@ -112,7 +117,11 @@ const EmailSummaryPage = () => {
         </button>
 
         {status && (
-          <p className={`status-message ${status.startsWith("✅") ? "success" : "error"}`}>
+          <p
+            className={`status-message ${
+              status.startsWith("✅") ? "success" : "error"
+            }`}
+          >
             {status}
           </p>
         )}

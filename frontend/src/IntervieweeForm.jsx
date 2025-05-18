@@ -40,17 +40,14 @@ const IntervieweeForm = () => {
       setJoining(true);
 
       // 1. Register user
-      const registerRes = await axios.post(
-        "http://localhost:5000/api/register",
-        {
-          name,
-          age,
-          email,
-          phone,
-          role: "interviewee",
-          roomId,
-        }
-      );
+      const registerRes = await axios.post("/api/register", {
+        name,
+        age,
+        email,
+        phone,
+        role: "interviewee",
+        roomId,
+      });
 
       const userId = registerRes.data.userId;
 
@@ -61,16 +58,13 @@ const IntervieweeForm = () => {
         const base64String = reader.result.split(",")[1]; // strip data:...base64,
         const contentType = resume.type;
 
-        const uploadRes = await axios.post(
-          "http://localhost:5000/api/upload-resume",
-          {
-            name,
-            roomId,
-            file: base64String,
-            filename: resume.name,
-            contentType,
-          }
-        );
+        const uploadRes = await axios.post("/api/upload-resume", {
+          name,
+          roomId,
+          file: base64String,
+          filename: resume.name,
+          contentType,
+        });
 
         if (!uploadRes.data.message) {
           setError("Resume upload failed.");

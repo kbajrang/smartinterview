@@ -20,7 +20,9 @@ const IntervieweePage = () => {
 
     setJoining(true);
     navigate(
-      `/room/${trimmedRoomId}?role=interviewee&name=${encodeURIComponent(trimmedUsername)}`
+      `/room/${trimmedRoomId}?role=interviewee&name=${encodeURIComponent(
+        trimmedUsername
+      )}`
     );
   };
 

@@ -72,7 +72,7 @@ const PreInterviewCheck = () => {
       const base64String = reader.result.split(",")[1];
 
       try {
-        await axios.post("http://localhost:5000/api/upload-resume", {
+        await axios.post("/api/upload-resume", {
           name,
           roomId,
           file: base64String,

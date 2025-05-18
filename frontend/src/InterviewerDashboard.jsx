@@ -21,7 +21,7 @@ const InterviewerDashboard = () => {
 
     try {
       setLoading(true);
-      await axios.post("http://localhost:5000/api/send-invite", {
+      await axios.post("/api/send-invite", {
         email,
         roomId,
         timeSlot: time,
@@ -38,7 +38,7 @@ const InterviewerDashboard = () => {
 
   const fetchInterviews = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/interviews");
+      const res = await axios.get("/api/interviews");
       setUpcoming(res.data.upcoming || []);
       setPast(res.data.past || []);
     } catch (err) {
@@ -95,7 +95,9 @@ const InterviewerDashboard = () => {
         <div className="interview-section">
           <div className="tabs">
             <button
-              className={`tab-button ${activeTab === "upcoming" ? "active" : ""}`}
+              className={`tab-button ${
+                activeTab === "upcoming" ? "active" : ""
+              }`}
               onClick={() => setActiveTab("upcoming")}
             >
               📅 Upcoming
@@ -112,23 +114,27 @@ const InterviewerDashboard = () => {
             {(activeTab === "upcoming" ? upcoming : past).length === 0 ? (
               <p className="placeholder-text">No {activeTab} interviews yet.</p>
             ) : (
-              (activeTab === "upcoming" ? upcoming : past).map((item, index) => (
-                <div key={index} className="interview-card">
-                  <p><strong>📧 {item.email}</strong></p>
-                  <p>🆔 Room ID: {item.roomId}</p>
-                  <p>🕒 Time: {new Date(item.timeSlot).toLocaleString()}</p>
-                  {activeTab === "upcoming" && (
-                    <a
-                      href={`http://localhost:5173/room/${item.roomId}?role=interviewer`}
-                      className="join-button"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Join
-                    </a>
-                  )}
-                </div>
-              ))
+              (activeTab === "upcoming" ? upcoming : past).map(
+                (item, index) => (
+                  <div key={index} className="interview-card">
+                    <p>
+                      <strong>📧 {item.email}</strong>
+                    </p>
+                    <p>🆔 Room ID: {item.roomId}</p>
+                    <p>🕒 Time: {new Date(item.timeSlot).toLocaleString()}</p>
+                    {activeTab === "upcoming" && (
+                      <a
+                        href={`${window.location.origin}/room/${item.roomId}?role=interviewer`}
+                        className="join-button"
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Join
+                      </a>
+                    )}
+                  </div>
+                )
+              )
             )}
           </div>
         </div>

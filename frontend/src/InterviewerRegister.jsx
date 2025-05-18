@@ -4,7 +4,12 @@ import { useNavigate } from "react-router-dom";
 import "./App.css";
 
 const InterviewerRegister = () => {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const navigate = useNavigate();
@@ -15,7 +20,7 @@ const InterviewerRegister = () => {
 
   const handleRegister = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/interviewer-register", form);
+      const res = await axios.post("/api/interviewer-register", form);
       setSuccess("Registration successful. Redirecting to login...");
       setError("");
       setTimeout(() => navigate("/interviewer-login"), 1500);
@@ -29,13 +34,35 @@ const InterviewerRegister = () => {
     <div className="join-container">
       <div className="join-form">
         <h2>Interviewer Registration</h2>
-        <input type="text" name="name" placeholder="Full Name" onChange={handleChange} />
-        <input type="text" name="phone" placeholder="Phone Number" onChange={handleChange} />
-        <input type="email" name="email" placeholder="Email" onChange={handleChange} />
-        <input type="password" name="password" placeholder="Password" onChange={handleChange} />
+        <input
+          type="text"
+          name="name"
+          placeholder="Full Name"
+          onChange={handleChange}
+        />
+        <input
+          type="text"
+          name="phone"
+          placeholder="Phone Number"
+          onChange={handleChange}
+        />
+        <input
+          type="email"
+          name="email"
+          placeholder="Email"
+          onChange={handleChange}
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          onChange={handleChange}
+        />
         <button onClick={handleRegister}>Register</button>
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
-        {success && <p style={{ color: "green", marginTop: "10px" }}>{success}</p>}
+        {success && (
+          <p style={{ color: "green", marginTop: "10px" }}>{success}</p>
+        )}
       </div>
     </div>
   );

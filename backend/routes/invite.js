@@ -17,20 +17,26 @@ router.post("/send-invite", async (req, res) => {
   const { email, roomId, timeSlot } = req.body;
 
   if (!email || !roomId || !timeSlot) {
-    return res.status(400).json({ error: "Missing email, roomId, or timeSlot" });
+    return res
+      .status(400)
+      .json({ error: "Missing email, roomId, or timeSlot" });
   }
 
-  const joinUrl = `http://localhost:5173/precheck/${roomId}?name=Candidate&role=interviewee`;
+  const joinUrl = `http://localhost:5000/precheck/${roomId}?name=Candidate&role=interviewee`;
 
   const mailOptions = {
-    from: `"Smart Interview System" <${process.env.MAIL_USER || "kailasabajrang6@gmail.com"}>`,
+    from: `"Smart Interview System" <${
+      process.env.MAIL_USER || "kailasabajrang6@gmail.com"
+    }>`,
     to: email,
     subject: "📝 Your Interview Invitation",
     html: `
       <div style="font-family: Arial; padding: 20px;">
         <h2 style="color:#4f46e5;">Interview Invitation</h2>
         <p>You are invited for a technical interview.</p>
-        <p><strong>Date & Time:</strong> ${new Date(timeSlot).toLocaleString()}</p>
+        <p><strong>Date & Time:</strong> ${new Date(
+          timeSlot
+        ).toLocaleString()}</p>
         <p><strong>Join Link:</strong> <a href="${joinUrl}" target="_blank">${joinUrl}</a></p>
         <p><strong>Room ID:</strong> ${roomId}</p>
       </div>
@@ -40,10 +46,14 @@ router.post("/send-invite", async (req, res) => {
   try {
     await transporter.sendMail(mailOptions);
     await ScheduledInterview.create({ email, roomId, timeSlot });
-    return res.status(200).json({ message: "✅ Invite sent and stored successfully!" });
+    return res
+      .status(200)
+      .json({ message: "✅ Invite sent and stored successfully!" });
   } catch (error) {
     console.error("❌ Email/send error:", error);
-    return res.status(500).json({ error: "Failed to send invite or store record" });
+    return res
+      .status(500)
+      .json({ error: "Failed to send invite or store record" });
   }
 });
 
@@ -51,8 +61,12 @@ router.post("/send-invite", async (req, res) => {
 router.get("/interviews", async (req, res) => {
   try {
     const now = new Date();
-    const upcoming = await ScheduledInterview.find({ timeSlot: { $gte: now } }).sort("timeSlot");
-    const past = await ScheduledInterview.find({ timeSlot: { $lt: now } }).sort("-timeSlot");
+    const upcoming = await ScheduledInterview.find({
+      timeSlot: { $gte: now },
+    }).sort("timeSlot");
+    const past = await ScheduledInterview.find({ timeSlot: { $lt: now } }).sort(
+      "-timeSlot"
+    );
 
     res.status(200).json({ upcoming, past });
   } catch (error) {
@@ -98,7 +112,5 @@ router.post("/send-summary", async (req, res) => {
     return res.status(500).json({ error: "Failed to send email" });
   }
 });
-
-
 
 export default router;

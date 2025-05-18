@@ -27,9 +27,18 @@ const InterviewerPage = () => {
       <div className="join-form">
         <h1>Room Created</h1>
         <div style={{ position: "relative" }}>
-          <input type="text" value={roomId} readOnly style={{ marginBottom: "10px" }} />
-          <button onClick={handleCopy} style={{ marginTop: "5px" }}>Copy Room ID</button>
-          {copySuccess && <p style={{ color: "green", fontSize: "12px" }}>{copySuccess}</p>}
+          <input
+            type="text"
+            value={roomId}
+            readOnly
+            style={{ marginBottom: "10px" }}
+          />
+          <button onClick={handleCopy} style={{ marginTop: "5px" }}>
+            Copy Room ID
+          </button>
+          {copySuccess && (
+            <p style={{ color: "green", fontSize: "12px" }}>{copySuccess}</p>
+          )}
         </div>
         <button onClick={handleStart} style={{ marginTop: "15px" }}>
           Start Interview

@@ -81,9 +81,7 @@ const RoomPage = () => {
   useEffect(() => {
     const fetchIntervieweeEmail = async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
-        );
+        const res = await axios.get(`/api/get-email-by-room?roomId=${roomId}`);
         setIntervieweeEmail(res.data.email);
       } catch (err) {
         console.error("❌ Failed to fetch interviewee email:", err);
@@ -139,9 +137,7 @@ const RoomPage = () => {
 
   const handleLeave = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
-      );
+      const res = await axios.get(`/api/get-email-by-room?roomId=${roomId}`);
       const intervieweeEmail = res.data.email;
 
       socket.emit("leaveRoom");
@@ -158,9 +154,7 @@ const RoomPage = () => {
 
   const endInterview = async () => {
     try {
-      const res = await axios.get(
-        `http://localhost:5000/api/get-email-by-room?roomId=${roomId}`
-      );
+      const res = await axios.get(`/api/get-email-by-room?roomId=${roomId}`);
       const intervieweeEmail = res.data.email;
 
       alert("Interview ended due to multiple malpractice events.");
@@ -236,9 +230,7 @@ const RoomPage = () => {
   };
 
   const handleViewResume = async () => {
-    const res = await axios.get(
-      `http://localhost:5000/api/get-resume?roomId=${roomId}`
-    );
+    const res = await axios.get(`/api/get-resume?roomId=${roomId}`);
     const { base64, filename, contentType } = res.data;
 
     const blob = new Blob(
