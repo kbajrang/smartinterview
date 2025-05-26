@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
-
 const PreInterviewCheck = () => {
   const videoRef = useRef(null);
   const [micWorking, setMicWorking] = useState(false);
@@ -61,34 +60,50 @@ const PreInterviewCheck = () => {
     setVolumeLevel(0);
   };
 
+  /*************  ✨ Windsurf Command ⭐  *************/
+  /**
+   * handleProceed
+   *
+   * Proceeds with the interview after the user has
+   * completed the pre-interview checks and filled in
+   * the form.
+   *
+   * If the checks haven't been completed or the form
+   * isn't filled in, an alert is shown.
+   *
+   * If the checks have been completed and the form is
+   * filled in, the user's resume is uploaded and the
+   * user is redirected to the room.
+   */
+  /*******  7a347e85-04be-4bb4-9cf1-001ab60ad1cb  *******/
   const handleProceed = async () => {
-    if (!micWorking || !acceptedTerms || !name || !resumeFile) {
-      alert("Please complete all checks and fill in the form.");
+    if (!resumeFile || !name || !roomId || !acceptedTerms || !micWorking) {
+      alert("Please complete all fields and checks.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64String = reader.result.split(",")[1];
+    const formData = new FormData();
+    formData.append("resume", resumeFile);
+    formData.append("name", name);
+    formData.append("roomId", roomId);
 
-      try {
-        await axios.post("/api/upload-resume", {
-          name,
-          roomId,
-          file: base64String,
-          filename: resumeFile.name,
-          contentType: resumeFile.type,
-        });
+    try {
+      const res = await axios.post("/api/upload-resume", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "x-name": name,
+          "x-roomid": roomId,
+        },
+      });
 
-        navigate(
-          `/room/${roomId}?role=interviewee&name=${encodeURIComponent(name)}`
-        );
-      } catch (err) {
-        console.error("Upload error:", err);
-        alert("❌ Failed to upload resume");
-      }
-    };
-    reader.readAsDataURL(resumeFile);
+      console.log("✅ Upload success:", res.data);
+      navigate(
+        `/room/${roomId}?role=interviewee&name=${encodeURIComponent(name)}`
+      );
+    } catch (err) {
+      console.error("❌ Upload error:", err);
+      alert("Upload failed");
+    }
   };
 
   return (
@@ -107,7 +122,7 @@ const PreInterviewCheck = () => {
         <label className="input-label">Upload Resume (PDF)</label>
         <input
           type="file"
-          accept="application/pdf"
+          accept=".pdf"
           onChange={(e) => setResumeFile(e.target.files[0])}
           className="custom-input"
         />

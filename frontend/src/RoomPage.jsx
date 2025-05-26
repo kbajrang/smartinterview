@@ -27,6 +27,10 @@ const RoomPage = () => {
   const [clipboardLog, setClipboardLog] = useState([]);
   const [intervieweeEmail, setIntervieweeEmail] = useState("");
 
+  const localStreamRef = useRef(null);
+  const remoteStreamRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+
   const recognitionRef = useRef(null);
 
   const languageVersions = {
@@ -170,46 +174,48 @@ const RoomPage = () => {
     }
   };
 
-  const startTranscription = () => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("SpeechRecognition not supported.");
+  const startRecording = () => {
+    if (!localStreamRef.current || !remoteStreamRef.current) {
+      alert("Audio streams not ready");
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
+    const combinedStream = new MediaStream([
+      ...localStreamRef.current.getAudioTracks(),
+      ...remoteStreamRef.current.getAudioTracks(),
+    ]);
 
-    recognition.onresult = async (event) => {
-      let interimTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const spokenText = event.results[i][0].transcript.trim();
-        if (event.results[i].isFinal) {
-          const label = role === "interviewer" ? "Interviewer" : "Interviewee";
-          const line = `${label}: ${spokenText}`;
-          setTranscript((prev) => `${prev}\n${line}`);
-          try {
-            await axios.post(`/api/append-transcript`, { roomId, line });
-          } catch (error) {
-            console.error("Transcript append failed:", error);
-          }
-        } else {
-          interimTranscript += spokenText;
-        }
+    const recorder = new MediaRecorder(combinedStream);
+    const chunks = [];
+
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) chunks.push(e.data);
+    };
+
+    recorder.onstop = async () => {
+      const blob = new Blob(chunks, { type: "audio/webm" });
+      const formData = new FormData();
+      formData.append("audio", blob);
+
+      try {
+        await axios.post(`/upload-recording?roomId=${roomId}`, formData);
+        alert("🎉 Recording uploaded successfully.");
+      } catch (err) {
+        console.error("Upload error:", err);
+        alert("Failed to upload recording.");
       }
     };
 
-    recognition.start();
-    recognitionRef.current = recognition;
+    recorder.start();
+    mediaRecorderRef.current = recorder;
     setIsRecording(true);
   };
 
-  const stopTranscription = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
-    setIsRecording(false);
+  const stopRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
   };
 
   const handleDownloadTranscript = () => {
@@ -228,17 +234,18 @@ const RoomPage = () => {
       socket.emit("postQuestion", { roomId, question: updatedQuestion });
     }
   };
-
   const handleViewResume = async () => {
-    const res = await axios.get(`/api/get-resume?roomId=${roomId}`);
-    const { base64, filename, contentType } = res.data;
-
-    const blob = new Blob(
-      [Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))],
-      { type: contentType }
+    const interviewee = users.find((u) => u !== name);
+    if (!interviewee) return alert("Interviewee not found");
+    console.log(interviewee);
+    const response = await axios.get(
+      `/api/get-resume?roomId=${encodeURIComponent(roomId)}`
     );
-    const url = URL.createObjectURL(blob);
-    window.open(url, "_blank");
+    const { resumeUrl } = response.data;
+    console.log(`${window.location.origin}/${resumeUrl}`);
+    if (resumeUrl) {
+      window.open(`${window.location.origin}${resumeUrl}`, "_blank");
+    }
   };
 
   return (
@@ -247,25 +254,21 @@ const RoomPage = () => {
         <VideoChat
           socket={socket}
           roomId={roomId}
-          violationCount={violationCount}
+          onStreamsReady={(local, remote) => {
+            localStreamRef.current = local;
+            remoteStreamRef.current = remote;
+          }}
         />
 
         {role === "interviewer" && (
           <>
             <button
               className="record-btn"
-              onClick={isRecording ? stopTranscription : startTranscription}
+              onClick={isRecording ? stopRecording : startRecording}
             >
-              {isRecording ? "⏹ Stop" : "🎙 Start"}
+              {isRecording ? "⏹ Stop Recording" : "🎙 Start Recording"}
             </button>
-            {transcript && (
-              <button
-                className="copy-button"
-                onClick={handleDownloadTranscript}
-              >
-                📥 Download Transcript
-              </button>
-            )}
+
             <button className="copy-button" onClick={handleViewResume}>
               📄 View Resume
             </button>

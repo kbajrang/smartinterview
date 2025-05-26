@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
-import "./App.css";
+import "./InterviwerLogin.css";
 
 const InterviewerLogin = () => {
   const [email, setEmail] = useState("");
@@ -16,17 +16,10 @@ const InterviewerLogin = () => {
     }
 
     try {
-      const res = await axios.post("/api/interviewer-login", {
-        email,
-        password,
-      });
-
+      const res = await axios.post("/api/interviewer-login", { email, password });
       const { interviewer } = res.data;
-
-      // Store session in localStorage
       localStorage.setItem("interviewerId", interviewer.id);
       localStorage.setItem("interviewerName", interviewer.name);
-
       navigate("/interviewer-dashboard");
     } catch (err) {
       console.error("Login error:", err);
@@ -35,12 +28,13 @@ const InterviewerLogin = () => {
   };
 
   return (
-    <div className="join-container">
-      <div className="join-form">
-        <h2>Interviewer Login</h2>
+    <div className="login-container">
+      <div className="login-card">
+        <h2 className="login-title">Interviewer Login</h2>
 
         <input
           type="email"
+          className="login-input"
           placeholder="Enter Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -48,28 +42,24 @@ const InterviewerLogin = () => {
 
         <input
           type="password"
+          className="login-input"
           placeholder="Enter Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
-        <button onClick={handleLogin}>Login</button>
+        <button className="login-button" onClick={handleLogin}>
+          Login
+        </button>
 
-        <p style={{ marginTop: "1rem", fontSize: "14px" }}>
+        <p className="login-footer">
           New here?{" "}
-          <span
-            style={{
-              color: "#007bff",
-              cursor: "pointer",
-              textDecoration: "underline",
-            }}
-            onClick={() => navigate("/interviewer-register")}
-          >
+          <span className="login-link" onClick={() => navigate("/interviewer-register")}>
             Create an account
           </span>
         </p>
 
-        {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
+        {error && <p className="login-error">{error}</p>}
       </div>
     </div>
   );

@@ -10,15 +10,18 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import dotenv from "dotenv";
-import fetch from "node-fetch"; // ⬅️ Important: Add at the top of index.js if not present
+import fetch from "node-fetch";
 import mongoose from "mongoose";
 import User from "./models/User.js";
-import multer from "multer"; // (Will use later for Resume upload)
-import Interviewer from "./models/interviewer.js"; // ✅ CORRECT
-import interviewerRoutes from "./routes/interviewer.js"; // ✅ Import
-import inviteRouter from "./routes/invite.js"; // ✅ Make sure this path is correct
+import multer from "multer";
+import Interviewer from "./models/interviewer.js";
+import interviewerRoutes from "./routes/interviewer.js";
+import inviteRouter from "./routes/invite.js";
 import Resume from "./models/Resume.js";
-import PasteLog from "./models/PasteLog.js"; // ⬅️ Add this at top with other model imports
+import PasteLog from "./models/PasteLog.js";
+import ScheduledInterview from "./models/ScheduledInterview.js";
+
+dotenv.config();
 
 const MONGO_URI =
   "mongodb+srv://KailasaBajrang:Bajjusatya@cluster0.spg3xdo.mongodb.net/SmartInterviewSystem?retryWrites=true&w=majority&appName=Cluster0";
@@ -30,68 +33,106 @@ mongoose
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((error) => console.error("❌ MongoDB connection error:", error));
 
-dotenv.config();
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Ensure resume directory exists
 const uploadsDir = path.join(__dirname, "uploads", "resumes");
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
-// Setup storage for resumes
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/resumes"); // Save in uploads/resumes folder
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename: (req, file, cb) => {
+    const name = req.headers["x-name"]?.replace(/\s+/g, "_") || "unknown";
+    const roomId = req.headers["x-roomid"] || "unknown";
+
+    const ext = path.extname(file.originalname);
+    cb(null, `${name}-${roomId}${ext}`);
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
 app.use(cors());
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-  })
-);
-// app.use(express.json()); // ✅ REQUIRED for req.body to work
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-app.use("/api", interviewerRoutes); // ✅ mount route prefix
-app.use("/api", inviteRouter); // ✅ This enables /api/send-invite
+app.use("/api", interviewerRoutes);
+app.use("/api", inviteRouter);
 
-app.use("/resumes", express.static(path.join(__dirname, "uploads/resumes")));
+app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
+  try {
+    const { name, roomId } = req.body;
+    console.log(req.body);
+    const filename = req.file.filename;
+    const resumePath = `/resumes/${filename}`; // ✅ PUBLIC path
 
-//for running application on one port
+    const scheduled = await ScheduledInterview.findOne({ roomId });
+    const email = scheduled?.email || "";
+
+    await Resume.create({
+      name,
+      roomId,
+      email,
+      filename,
+      resumePath,
+    });
+
+    res.status(200).json({ message: "Resume uploaded", resumeUrl: resumePath });
+  } catch (err) {
+    console.error("Resume upload error:", err);
+    res.status(500).json({ error: "Failed to upload resume" });
+  }
+});
+
+app.get("/api/get-resume", async (req, res) => {
+  try {
+    console.log("in get-resume");
+    console.log("Query received:", req.query);
+
+    const { roomId } = req.query;
+    const resume = await Resume.findOne({ roomId });
+    if (!resume) return res.status(404).json({ error: "Resume not found" });
+    console.log("Resume found:", resume);
+    res.status(200).json({ resumeUrl: resume.resumePath, email: resume.email });
+  } catch (err) {
+    console.error("Resume fetch error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/resumes/:filename", (req, res) => {
+  const filePath = path.join(
+    __dirname,
+    "uploads",
+    "resumes",
+    req.params.filename
+  );
+  if (fs.existsSync(filePath)) {
+    res.sendFile(filePath);
+  } else {
+    res.status(404).send("Resume not found");
+  }
+});
+
 app.use(express.static(path.join(__dirname, "..", "frontend", "dist")));
 
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "dist", "index.html"));
 });
 
-// Folders
 const transcriptDir = path.join(__dirname, "transcripts");
 if (!fs.existsSync(transcriptDir)) fs.mkdirSync(transcriptDir);
 
-// Save full transcript
 app.post("/api/save-transcript", (req, res) => {
   try {
     const { roomId, transcript } = req.body;
     if (!roomId || !transcript) {
       return res.status(400).json({ error: "Missing roomId or transcript" });
     }
-
     const filePath = path.join(transcriptDir, `transcript_room_${roomId}.txt`);
     fs.writeFileSync(filePath, transcript, "utf-8");
     console.log(`📄 Transcript saved: ${filePath}`);
@@ -102,14 +143,12 @@ app.post("/api/save-transcript", (req, res) => {
   }
 });
 
-// Append a line to transcript
 app.post("/api/append-transcript", (req, res) => {
   try {
     const { roomId, line } = req.body;
     if (!roomId || !line) {
       return res.status(400).json({ error: "Missing roomId or line" });
     }
-
     const filePath = path.join(transcriptDir, `transcript_room_${roomId}.txt`);
     fs.appendFileSync(filePath, line + "\n", "utf-8");
     console.log(`📝 Line appended to: ${filePath}`);
@@ -153,6 +192,7 @@ app.post("/api/store-paste-db", async (req, res) => {
     res.status(500).json({ error: "Failed to save paste to DB" });
   }
 });
+
 app.post("/api/register", async (req, res) => {
   try {
     const { name, phone, email, role, age } = req.body;
@@ -168,42 +208,6 @@ app.post("/api/register", async (req, res) => {
   } catch (err) {
     console.error("Register error:", err);
     res.status(500).json({ error: "Registration failed" });
-  }
-});
-app.post("/api/upload-resume", async (req, res) => {
-  try {
-    const { name, roomId, file, filename, contentType } = req.body;
-    if (!name || !roomId || !file || !filename || !contentType) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    await Resume.create({
-      name,
-      roomId,
-      resumeBase64: file,
-      filename,
-      contentType,
-    });
-    res.status(200).json({ message: "Resume uploaded successfully" });
-  } catch (error) {
-    console.error("Resume upload error:", error);
-    res.status(500).json({ error: "Failed to upload resume" });
-  }
-});
-
-app.get("/api/get-resume", async (req, res) => {
-  try {
-    const { roomId } = req.query;
-    const resume = await Resume.findOne({ roomId });
-    if (!resume) return res.status(404).json({ error: "Not found" });
-
-    res.status(200).json({
-      base64: resume.resumeBase64,
-      filename: resume.filename,
-      contentType: resume.contentType,
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Error fetching resume" });
   }
 });
 

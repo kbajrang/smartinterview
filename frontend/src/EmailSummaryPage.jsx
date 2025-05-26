@@ -16,6 +16,8 @@ Smart Interview Team`,
 
 Thank you for attending your interview. Our team will review your session and get back to you shortly with the results.
 
+If you wish to receive detailed feedback, please send a request to this email with subject: Request Feedback.
+
 Best of luck!
 
 Regards,
@@ -30,41 +32,11 @@ const EmailSummaryPage = () => {
   const roomId = searchParams.get("roomId");
 
   const [message, setMessage] = useState("");
-  const [transcript, setTranscript] = useState("");
   const [status, setStatus] = useState("");
-  const [personalNote, setPersonalNote] = useState("");
-  const [pdfPath, setPdfPath] = useState(null);
 
   useEffect(() => {
     setMessage(defaultMessages[type] || "");
-
-    const saved = localStorage.getItem("interviewTranscript");
-    if (saved) {
-      setTranscript(saved);
-    } else {
-      console.warn("⚠️ Transcript not found in localStorage");
-    }
   }, [type]);
-
-  const handleGeneratePDF = async () => {
-    try {
-      const res = await axios.post(
-        "https://llmintegrationmp.onrender.com/api/analyze",
-        {
-          email,
-          roomId,
-          transcript,
-        }
-      );
-
-      const pdfUrl = res.data.pdf;
-      setPdfPath(pdfUrl);
-      alert("✅ PDF feedback generated!");
-    } catch (error) {
-      console.error("LLM PDF generation failed:", error);
-      alert("❌ Failed to generate PDF.");
-    }
-  };
 
   const handleSend = async () => {
     try {
@@ -72,8 +44,7 @@ const EmailSummaryPage = () => {
         email,
         roomId,
         type,
-        content: message + "\n\n" + personalNote,
-        pdf: pdfPath, // 👈 Pass PDF URL for backend to fetch and attach
+        content: message,
       });
       setStatus("✅ Email sent successfully!");
       setTimeout(() => navigate("/"), 2000);
@@ -91,37 +62,19 @@ const EmailSummaryPage = () => {
           <strong>To:</strong> {email}
         </p>
 
-        <label>Default Message:</label>
+        <label>Email Content:</label>
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-        />
-
-        <label>💬 Personal Feedback (Optional):</label>
-        <textarea
-          placeholder="Write any personal note or detailed comment to include in the email..."
-          value={personalNote}
-          onChange={(e) => setPersonalNote(e.target.value)}
+          rows={12}
         />
 
         <button className="send-button" onClick={handleSend}>
-          📤 Send Email with Feedback
-        </button>
-
-        <button
-          className="send-button"
-          style={{ backgroundColor: "#1e40af" }}
-          onClick={handleGeneratePDF}
-        >
-          📄 Generate Feedback PDF
+          📤 Send Email
         </button>
 
         {status && (
-          <p
-            className={`status-message ${
-              status.startsWith("✅") ? "success" : "error"
-            }`}
-          >
+          <p className={`status-message ${status.startsWith("✅") ? "success" : "error"}`}>
             {status}
           </p>
         )}
