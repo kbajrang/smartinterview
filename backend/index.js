@@ -21,6 +21,7 @@ import recordingRouter from "./routes/recording.js";
 import Resume from "./models/Resume.js";
 import PasteLog from "./models/PasteLog.js";
 import ScheduledInterview from "./models/ScheduledInterview.js";
+import Transcript from "./models/Transcript.js";
 
 dotenv.config();
 
@@ -129,14 +130,22 @@ app.get("*", (req, res) => {
 const transcriptDir = path.join(__dirname, "transcripts");
 if (!fs.existsSync(transcriptDir)) fs.mkdirSync(transcriptDir);
 
-app.post("/api/save-transcript", (req, res) => {
+app.post("/api/save-transcript", async (req, res) => {
   try {
     const { roomId, transcript } = req.body;
     if (!roomId || !transcript) {
       return res.status(400).json({ error: "Missing roomId or transcript" });
     }
+
     const filePath = path.join(transcriptDir, `transcript_room_${roomId}.txt`);
     fs.writeFileSync(filePath, transcript, "utf-8");
+
+    await Transcript.findOneAndUpdate(
+      { roomId },
+      { content: transcript, updatedAt: new Date() },
+      { upsert: true }
+    );
+
     console.log(`📄 Transcript saved: ${filePath}`);
     res.status(200).json({ message: "Transcript saved!", file: filePath });
   } catch (error) {
@@ -145,14 +154,25 @@ app.post("/api/save-transcript", (req, res) => {
   }
 });
 
-app.post("/api/append-transcript", (req, res) => {
+app.post("/api/append-transcript", async (req, res) => {
   try {
     const { roomId, line } = req.body;
     if (!roomId || !line) {
       return res.status(400).json({ error: "Missing roomId or line" });
     }
+
     const filePath = path.join(transcriptDir, `transcript_room_${roomId}.txt`);
     fs.appendFileSync(filePath, line + "\n", "utf-8");
+
+    let doc = await Transcript.findOne({ roomId });
+    if (!doc) {
+      doc = await Transcript.create({ roomId, content: line + "\n" });
+    } else {
+      doc.content += line + "\n";
+      doc.updatedAt = new Date();
+      await doc.save();
+    }
+
     console.log(`📝 Line appended to: ${filePath}`);
     res.status(200).json({ message: "Line appended!" });
   } catch (error) {
