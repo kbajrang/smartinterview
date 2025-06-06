@@ -1,5 +1,5 @@
 // src/InterviewerPage.jsx
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
 
@@ -8,7 +8,7 @@ const generateRoomId = () => {
 };
 
 const InterviewerPage = () => {
-  const [roomId, setRoomId] = useState(generateRoomId());
+  const [roomId] = useState(generateRoomId());
   const [copySuccess, setCopySuccess] = useState("");
   const navigate = useNavigate();
 

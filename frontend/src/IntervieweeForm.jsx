@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
@@ -40,7 +40,7 @@ const IntervieweeForm = () => {
       setJoining(true);
 
       // 1. Register user
-      const registerRes = await axios.post("/api/register", {
+      await axios.post("/api/register", {
         name,
         age,
         email,
@@ -48,8 +48,6 @@ const IntervieweeForm = () => {
         role: "interviewee",
         roomId,
       });
-
-      const userId = registerRes.data.userId;
 
       // 2. Upload resume
       // Read file as base64

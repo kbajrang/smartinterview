@@ -17,6 +17,7 @@ import multer from "multer";
 import Interviewer from "./models/interviewer.js";
 import interviewerRoutes from "./routes/interviewer.js";
 import inviteRouter from "./routes/invite.js";
+import recordingRouter from "./routes/recording.js";
 import Resume from "./models/Resume.js";
 import PasteLog from "./models/PasteLog.js";
 import ScheduledInterview from "./models/ScheduledInterview.js";
@@ -62,6 +63,7 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 app.use("/api", interviewerRoutes);
 app.use("/api", inviteRouter);
+app.use(recordingRouter);
 
 app.post("/api/upload-resume", upload.single("resume"), async (req, res) => {
   try {

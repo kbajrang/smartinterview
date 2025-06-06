@@ -1,5 +1,5 @@
 // Updated PreInterviewCheck.jsx with enhanced CSS class usage
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios";
 import "./App.css";
