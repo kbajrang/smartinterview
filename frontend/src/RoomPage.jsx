@@ -24,7 +24,7 @@ const RoomPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [violationCount, setViolationCount] = useState(0);
-  const [clipboardLog] = useState([]);
+  const [clipboardLog, setClipboardLog] = useState([]);
 
   const localStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
@@ -127,6 +127,26 @@ const RoomPage = () => {
       };
     }
   }, [role, roomId]);
+
+  useEffect(() => {
+    if (role === "interviewee") {
+      const handlePaste = async (e) => {
+        const text = e.clipboardData.getData("text");
+        setClipboardLog((prev) => [...prev, text]);
+        try {
+          await axios.post("/api/store-paste-db", {
+            roomId,
+            name,
+            pastedText: text,
+          });
+        } catch (err) {
+          console.error("Failed to store pasted text:", err);
+        }
+      };
+      window.addEventListener("paste", handlePaste);
+      return () => window.removeEventListener("paste", handlePaste);
+    }
+  }, [role, roomId, name]);
 
   const handleViewClipboardLog = () => {
     const logText =

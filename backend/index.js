@@ -129,6 +129,8 @@ app.get("*", (req, res) => {
 
 const transcriptDir = path.join(__dirname, "transcripts");
 if (!fs.existsSync(transcriptDir)) fs.mkdirSync(transcriptDir);
+const pasteDir = path.join(__dirname, "paste_logs");
+if (!fs.existsSync(pasteDir)) fs.mkdirSync(pasteDir);
 
 app.post("/api/save-transcript", async (req, res) => {
   try {
@@ -206,9 +208,12 @@ app.post("/api/store-paste-db", async (req, res) => {
         .json({ error: "Missing roomId, name, or pastedText" });
     }
 
-    await PasteLog.create({ roomId, name, pastedText });
+  await PasteLog.create({ roomId, name, pastedText });
 
-    res.status(200).json({ message: "Paste saved to DB" });
+    const filePath = path.join(pasteDir, `paste_room_${roomId}.txt`);
+    fs.appendFileSync(filePath, `[${name}] ${pastedText}\n`, "utf-8");
+
+  res.status(200).json({ message: "Paste saved to DB" });
   } catch (error) {
     console.error("Paste DB error:", error);
     res.status(500).json({ error: "Failed to save paste to DB" });
