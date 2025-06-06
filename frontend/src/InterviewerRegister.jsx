@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "./App.css";
@@ -19,9 +19,9 @@ const InterviewerRegister = () => {
   };
 
   const handleRegister = async () => {
-    try {
-      const res = await axios.post("/api/interviewer-register", form);
-      setSuccess("Registration successful. Redirecting to login...");
+      try {
+        await axios.post("/api/interviewer-register", form);
+        setSuccess("Registration successful. Redirecting to login...");
       setError("");
       setTimeout(() => navigate("/interviewer-login"), 1500);
     } catch (err) {

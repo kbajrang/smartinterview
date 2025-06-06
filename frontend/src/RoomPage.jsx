@@ -1,5 +1,5 @@
 // src/RoomPage.jsx
-import React, { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import VideoChat from "./VideoChat";
@@ -24,14 +24,47 @@ const RoomPage = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [violationCount, setViolationCount] = useState(0);
-  const [clipboardLog, setClipboardLog] = useState([]);
-  const [intervieweeEmail, setIntervieweeEmail] = useState("");
+  const [clipboardLog] = useState([]);
 
   const localStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
 
   const recognitionRef = useRef(null);
+
+  const startTranscription = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+    const recognition = new SpeechRecognition();
+    recognition.interimResults = true;
+    recognition.continuous = true;
+    recognition.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i += 1) {
+        const text = e.results[i][0].transcript.trim();
+        if (e.results[i].isFinal) {
+          setTranscript((prev) => prev + text + "\n");
+          axios.post("/api/append-transcript", { roomId, line: text });
+        }
+      }
+    };
+    recognitionRef.current = recognition;
+    recognition.start();
+  };
+
+  const stopTranscription = async () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    if (transcript) {
+      try {
+        await axios.post("/api/save-transcript", { roomId, transcript });
+      } catch (err) {
+        console.error("Transcript save error:", err);
+      }
+    }
+  };
 
   const languageVersions = {
     java: "15.0.2",
@@ -81,18 +114,6 @@ const RoomPage = () => {
     };
   }, [roomId, name, navigate]);
 
-  // 🎯 Fetch real interviewee email from backend using roomId
-  useEffect(() => {
-    const fetchIntervieweeEmail = async () => {
-      try {
-        const res = await axios.get(`/api/get-email-by-room?roomId=${roomId}`);
-        setIntervieweeEmail(res.data.email);
-      } catch (err) {
-        console.error("❌ Failed to fetch interviewee email:", err);
-      }
-    };
-    if (role === "interviewer") fetchIntervieweeEmail();
-  }, [roomId, role]);
 
   useEffect(() => {
     if (role === "interviewee") {
@@ -145,6 +166,7 @@ const RoomPage = () => {
       const intervieweeEmail = res.data.email;
 
       socket.emit("leaveRoom");
+      await stopTranscription();
       navigate(
         `/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=normal`
       );
@@ -163,6 +185,7 @@ const RoomPage = () => {
 
       alert("Interview ended due to multiple malpractice events.");
       socket.emit("leaveRoom");
+      await stopTranscription();
       navigate(
         `/send-summary?email=${intervieweeEmail}&roomId=${roomId}&type=malpractice`
       );
@@ -208,14 +231,16 @@ const RoomPage = () => {
 
     recorder.start();
     mediaRecorderRef.current = recorder;
+    startTranscription();
     setIsRecording(true);
   };
 
   const stopRecording = () => {
     if (mediaRecorderRef.current) {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
     }
+    stopTranscription();
+    setIsRecording(false);
   };
 
   const handleDownloadTranscript = () => {
@@ -342,6 +367,9 @@ const RoomPage = () => {
           <div className="transcript-box">
             <h4>📝 Transcript:</h4>
             <pre style={{ whiteSpace: "pre-wrap" }}>{transcript}</pre>
+            <button className="copy-button" onClick={handleDownloadTranscript}>
+              ⬇️ Download Transcript
+            </button>
           </div>
         )}
       </div>

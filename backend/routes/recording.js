@@ -1,8 +1,8 @@
 // backend/routes/recording.js
-const express = require('express');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+import express from "express";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
 
 const router = express.Router();
 
@@ -25,4 +25,4 @@ router.post('/upload-recording', upload.single('audio'), (req, res) => {
   res.status(200).json({ message: 'Recording uploaded successfully' });
 });
 
-module.exports = router;
+export default router;
