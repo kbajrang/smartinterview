@@ -35,7 +35,7 @@ Smart Interview System connects interviewers and candidates in a shared room whe
 | Video/Audio | WebRTC |
 | Code Execution | Piston API |
 | Speech Recognition | Web Speech API |
-| Deployment | Local / Render (future) |
+| Deployment | Local / Render |
 
 ---
 
@@ -45,3 +45,23 @@ Smart Interview System connects interviewers and candidates in a shared room whe
 ```bash
 git clone https://github.com/your-username/your-repo-name.git
 cd your-repo-name
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Run in Development
+```bash
+npm run dev
+```
+
+### 4. Deploying to Render
+1. Create a **Web Service** on [Render](https://render.com/) and connect this repository.
+2. Set the **Build Command** to `npm run build`.
+3. Set the **Start Command** to `npm start` so the backend serves the built frontend on one port.
+4. Configure environment variables `MONGO_URI`, `MAIL_USER`, and `MAIL_PASS`.
+5. Deploy to obtain a public URL.
+
+Transcripts are stored in MongoDB in the `Transcript` collection.

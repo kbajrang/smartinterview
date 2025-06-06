@@ -1,1 +1,5 @@
 node_modules/
+
+# Ignore uploaded files and transcripts
+backend/uploads/
+backend/transcripts/
